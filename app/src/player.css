@@ -205,13 +205,43 @@ img.stage-fill { pointer-events: none; }
 .ru-print { position: absolute; top: 8px; left: 8px; color: var(--ink-soft); }
 .ru-print:hover { color: var(--night-2); }
 
+/* ── גרף כניסות ── */
+.plays { margin-top: 18px; }
+.plays-sub { margin: 2px 0 10px; color: var(--ink-soft); font-size: 13.5px; }
+.plays-wrap { position: relative; }
+.plays-tip {
+  position: absolute; top: 0; transform: translateX(-50%); pointer-events: none; z-index: 5;
+  background: var(--night); color: #fff; border-radius: 10px; padding: 8px 12px; font-size: 13px;
+  display: flex; flex-direction: column; gap: 2px; white-space: nowrap; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+.plays-tip .muted { color: rgba(255, 255, 255, 0.72); font-size: 12px; }
+.plays-table summary { cursor: pointer; font-size: 13px; color: var(--sky); margin-top: 6px; }
+.plays-table table { border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.plays-table th, .plays-table td { padding: 4px 12px; border-bottom: 1px solid #eef0f6; text-align: right; }
+
 /* ── עזרים ── */
 .res { margin-top: 22px; }
 .res h2 { font-size: 20px; margin-bottom: 4px; }
 .res > p { color: var(--ink-soft); margin: 0 0 12px; font-size: 14px; }
 .res-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
-.res-card { background: #fff; border-radius: 18px; box-shadow: var(--shadow); padding: 16px; display: flex; flex-direction: column; gap: 8px; border: 1.5px solid transparent; }
-.res-card.featured { grid-column: 1 / -1; border-color: var(--star); background: linear-gradient(135deg, #fffaf0, #fff); }
+.res-card { background: #fff; border-radius: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; border: 1.5px solid transparent; overflow: hidden; }
+.res-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.res-card.featured { grid-column: 1 / -1; border-color: var(--star); background: linear-gradient(135deg, #fffaf0, #fff); flex-direction: row; }
+.res-card.featured .res-body { padding: 18px 20px; }
+/* תצוגה מקדימה: רחבה (16:10) או דפים מודפסים עם צל, קצת מוטים */
+.res-preview { display: block; background: #eef1f8; }
+.res-preview.wide img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+.res-preview.pages { display: flex; justify-content: center; align-items: flex-start; gap: 10px; padding: 16px 16px 0; height: 170px; overflow: hidden; background: linear-gradient(180deg, #e9edf7, #f6f7fb); }
+.res-preview.pages img { width: 120px; border-radius: 3px; box-shadow: 0 6px 16px rgba(22, 34, 74, 0.22); background: #fff; transition: transform 0.2s; }
+.res-preview.pages img:nth-child(1) { transform: rotate(-2.5deg); }
+.res-preview.pages img:nth-child(2) { transform: rotate(2deg) translateY(6px); }
+.res-preview:hover img { transform: translateY(-3px); }
+.res-card.featured .res-preview.pages { width: 300px; flex-shrink: 0; height: auto; min-height: 220px; padding: 20px 16px 0; }
+.res-card.featured .res-preview.pages img { width: 128px; }
+@media (max-width: 640px) {
+  .res-card.featured { flex-direction: column; }
+  .res-card.featured .res-preview.pages { width: auto; min-height: 0; height: 180px; }
+}
 .res-card h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
 .res-card h3 .ic { width: 34px; height: 34px; border-radius: 999px; background: var(--sky-soft); color: var(--night-2); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .res-card.featured h3 .ic { background: var(--star-soft); color: var(--star-dark); }

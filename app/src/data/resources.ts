@@ -25,11 +25,15 @@ export interface Resource {
   links: { label: string; href: string }[];
   audience: ('teacher' | 'parent')[];
   featured?: boolean;
+  /** תמונות תצוגה מקדימה ב-public/previews (tools/make-previews.mjs) */
+  previews?: string[];
+  /** 'page' = עמוד מודפס לאורך (מוצג כדף), אחרת תמונה רחבה */
+  previewKind?: 'page' | 'wide';
 }
 
 export const RESOURCES: Resource[] = [
   {
-    id: 'booklet', icon: 'print', featured: true, audience: ['teacher', 'parent'],
+    id: 'booklet', icon: 'print', featured: true, previews: ['booklet-1', 'booklet-2'], previewKind: 'page', audience: ['teacher', 'parent'],
     title: 'חוברת מלווה להדפסה',
     desc: 'תרגול כתיבת האותיות, עם עזרי זכירה לצלילים. שווה להדפיס — החוברת הפיזית עוזרת לארגן את הלמידה, לזכור איפה אנחנו, ומחזקת את תחושת השליטה וההספק.',
     links: [
@@ -38,43 +42,43 @@ export const RESOURCES: Resource[] = [
     ],
   },
   {
-    id: 'texts', icon: 'text', audience: ['teacher', 'parent'],
+    id: 'texts', icon: 'text', previews: ['texts-1'], previewKind: 'page', audience: ['teacher', 'parent'],
     title: 'חוברת טקסטים',
     desc: 'כל הטקסטים שהילדים קוראים לאורך התוכנית, לפי סדר התחנות — לקריאה חוזרת על הדף.',
     links: [{ label: 'הורדת החוברת (PDF)', href: TEXTS_PDF }],
   },
   {
-    id: 'slides', icon: 'slides', audience: ['teacher'],
+    id: 'slides', icon: 'slides', previews: ['slides'], audience: ['teacher'],
     title: 'מצגת למורה',
     desc: 'אנימציות של האותיות לפי סדר הלמידה בתוכנית (האנימציות אילמות).',
     links: [{ label: 'הצגת המצגת', href: 'https://www.canva.com/design/DAF0magLs4E/view' }],
   },
   {
-    id: 'checks', icon: 'check', audience: ['teacher'],
+    id: 'checks', icon: 'check', previews: ['checks'], audience: ['teacher'],
     title: 'ערכת מבדקים',
     desc: 'להערכת ההתקדמות לאורך התוכנית.',
     links: [{ label: 'למבדקים', href: 'https://chepti.com/check/' }],
   },
   {
-    id: 'direction', icon: 'pen', audience: ['teacher', 'parent'],
+    id: 'direction', icon: 'pen', previews: ['direction'], audience: ['teacher', 'parent'],
     title: 'תרגול כיוון הכתיבה',
     desc: 'משחק לתרגול כיוון כתיבת האותיות הקטנות.',
     links: [{ label: 'למשחק', href: 'https://www.turtlediary.com/game/write-lowercase-letters.html' }],
   },
   {
-    id: 'playlist', icon: 'video', audience: ['teacher', 'parent'],
+    id: 'playlist', icon: 'video', previews: ['playlist'], audience: ['teacher', 'parent'],
     title: 'כל הסרטונים ביוטיוב',
     desc: 'הסרטונים של כל התחנות בפלייליסט אחד.',
     links: [{ label: 'לפלייליסט', href: 'https://www.youtube.com/playlist?list=PLJRbNE3_dNnhs52hJ1CMT-m04DDAIUn9R' }],
   },
   {
-    id: 'whatsapp', icon: 'chat', audience: ['teacher', 'parent'],
+    id: 'whatsapp', icon: 'chat', previews: ['whatsapp'], audience: ['teacher', 'parent'],
     title: 'קבוצת ווטסאפ למורים ולמלווים',
     desc: 'לשאול, לקבל טיפים, להציע ולבקש עזרים נוספים.',
     links: [{ label: 'הצטרפות לקבוצה', href: 'https://chat.whatsapp.com/HwsWj1vRqhuBSB5Czek25a' }],
   },
   {
-    id: 'feedback', icon: 'message', audience: ['teacher', 'parent'],
+    id: 'feedback', icon: 'message', previews: ['feedback'], audience: ['teacher', 'parent'],
     title: 'משוב',
     desc: 'ספרו לנו מה אהבתם ומה כדאי לשפר.',
     links: [{ label: 'לטופס המשוב', href: 'https://docs.google.com/forms/d/e/1FAIpQLScPKYtQVFOlH-230miljpuw-5dmKPQtYp32OjmeSsP3DsBBbw/viewform' }],

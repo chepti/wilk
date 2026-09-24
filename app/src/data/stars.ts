@@ -26,6 +26,24 @@ export function starsFor(q: number): number {
   return q > 0 ? 1 : 0;
 }
 
+/**
+ * "מכיר את האות": גם דיוק (70%+ בניסיון ראשון, מ-3 תשובות לפחות)
+ * וגם כיסוי — התחנה שמלמדת את האות בוצעה ברמה של 3 כוכבים ומעלה. דילוגים לא "מדליקים" אות.
+ */
+export function skillLevel(
+  skill: string,
+  units: { id: string; skills: string[]; kinds: string[] }[],
+  progress: { skills: Record<string, { c: number; w: number }>; slides: Record<string, SlideStat> },
+): 'known' | 'progress' | 'none' {
+  const st = progress.skills[skill];
+  const n = st ? st.c + st.w : 0;
+  const unit = units.find((u) => u.skills.includes(skill));
+  const cover = unit ? unitQuality(unit.id, unit.kinds, progress.slides) : 0;
+  if (n === 0 && cover === 0) return 'none';
+  if (n >= 3 && st!.c / n >= 0.7 && cover >= 0.6) return 'known';
+  return 'progress';
+}
+
 /** שקפים שעוד אפשר לשפר (לתפריט השקפים ולמסך הסיום) */
 export function weakSlides(unitId: string, kinds: string[], slides: Record<string, SlideStat>): number[] {
   return kinds.flatMap((k, i) => (STAR_KINDS.has(k) && (slides[`${unitId}:${i}`]?.q ?? 0) < 0.95 ? [i] : []));

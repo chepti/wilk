@@ -6,7 +6,7 @@ import SkyStars from '../ui/Sky';
 import Footer from '../ui/Footer';
 import { IconLogOut, IconPlay, IconLock, IconCheck } from '../ui/icons';
 import { avatarName } from '../data/avatars';
-import { starsFor, unitQuality } from '../data/stars';
+import { starsFor, unitQuality, skillLevel } from '../data/stars';
 import StarRow from '../ui/StarRow';
 import { IconHeart } from '../ui/icons';
 
@@ -198,9 +198,10 @@ function SkillShelf({ progress, units }: { progress: ProgressData; units: UnitMe
       <h3 style={{ fontSize: 16, marginBottom: 10, opacity: 0.9 }}>האותיות והצלילים שלי</h3>
       <div dir="ltr" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {skills.map((s) => {
-          const m = mastery(progress.skills[s], 2);
-          const lit = m !== null && m >= 0.7;
-          const mid = m !== null && !lit;
+          const level = skillLevel(s, units, progress);
+          const lit = level === 'known';
+          const mid = level === 'progress';
+          const m = level === 'none' ? null : 1;
           return (
             <span key={s} className="tip-host" style={{
               minWidth: 44, height: 44, padding: '0 10px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',

@@ -9,6 +9,16 @@ import { avatarName } from '../data/avatars';
 import { BASE } from '../lib/mediaPaths';
 import { unitStars } from './StarMap';
 import ResourcesPanel from '../ui/Resources';
+import PlaysChart from '../ui/PlaysChart';
+import { fetchPlays } from '../lib/api';
+
+/** כניסות לכל תחנה בכל האתר (לא רק בכיתה) */
+function SitePlays() {
+  const [units, setUnits] = useState<UnitMeta[]>([]);
+  const [plays, setPlays] = useState<Record<string, number>>({});
+  useEffect(() => { loadCatalog().then(setUnits); fetchPlays().then(setPlays); }, []);
+  return <PlaysChart units={units} plays={plays} />;
+}
 import Footer from '../ui/Footer';
 import { IconLogOut, IconPlus, IconCopy, IconEye, IconRefresh, IconTrash, IconUsers, IconGrid, IconArrowRight, IconCheck } from '../ui/icons';
 
@@ -110,6 +120,7 @@ function Dashboard({ t, onOut }: { t: TeacherSession; onOut: () => void }) {
         {cls ? <ClassView t={t} cls={cls} onChange={reload} /> : (
           <div className="card" style={{ textAlign: 'center', color: 'var(--ink-soft)' }}>צרו כיתה ראשונה — תקבלו קוד בן 6 ספרות שהתלמידים מקלידים</div>
         )}
+        <SitePlays />
         <ResourcesPanel audience="teacher" />
       </main>
       <Footer />

@@ -1,5 +1,6 @@
 import React from 'react';
 import { RESOURCES, BOOKLET_PDF, pdfPage, type ResourceIcon } from '../data/resources';
+import { BASE } from '../lib/mediaPaths';
 import { IconPrint, IconFile, IconPresentation, IconChat, IconClipboard, IconPen, IconVideo, IconMessage } from './icons';
 
 const ICONS: Record<ResourceIcon, (p: { size?: number }) => JSX.Element> = {
@@ -24,6 +25,12 @@ export default function ResourcesPanel({ audience }: { audience: 'teacher' | 'pa
           const Ic = ICONS[r.icon];
           return (
             <article key={r.id} className={`res-card${r.featured ? ' featured' : ''}`}>
+              {r.previews && (
+                <a className={`res-preview ${r.previewKind === 'page' ? 'pages' : 'wide'}`} href={r.links[0].href} target="_blank" rel="noopener noreferrer" aria-hidden="true" tabIndex={-1}>
+                  {r.previews.map((p) => <img key={p} src={`${BASE}previews/${p}.webp`} alt="" loading="lazy" />)}
+                </a>
+              )}
+              <div className="res-body">
               <h3><span className="ic"><Ic size={18} /></span>{r.title}</h3>
               <p>{r.desc}</p>
               {r.id === 'booklet' && (
@@ -41,6 +48,7 @@ export default function ResourcesPanel({ audience }: { audience: 'teacher' | 'pa
                     {l.label}
                   </a>
                 ))}
+              </div>
               </div>
             </article>
           );

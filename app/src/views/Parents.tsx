@@ -5,6 +5,8 @@ import { loadCatalog, mastery, SKILL_ORDER, type UnitMeta } from '../data/units'
 import { ABOUT, RIGHTS, BOOKLET_PDF, BOOKLET_PAGE, pdfPage } from '../data/resources';
 import { avatarName } from '../data/avatars';
 import { unitStars } from './StarMap';
+import { skillLevel } from '../data/stars';
+import PlaysChart from '../ui/PlaysChart';
 import StarRow from '../ui/StarRow';
 import ResourcesPanel from '../ui/Resources';
 import Footer from '../ui/Footer';
@@ -29,14 +31,9 @@ export default function Parents({ session, progress }: { session: StudentSession
       <main style={{ flex: 1, width: '100%', maxWidth: 1100, margin: '0 auto', padding: '4px 16px 24px' }}>
         <h1 style={{ fontSize: 26, marginBottom: 6 }}>להורים ולמורים</h1>
         <p style={{ color: 'var(--ink-soft)', marginTop: 0, lineHeight: 1.6, maxWidth: 760 }}>{ABOUT}</p>
-        {totalPlays > 0 && (
-          <p className="tip-host" style={{ fontWeight: 700, color: 'var(--night-2)' }}>
-            {totalPlays.toLocaleString('he-IL')} כניסות לתחנות מאז 2023
-            <span className="tip">כולל הכניסות בגרסה הקודמת של התוכנית (Jigzi)</span>
-          </p>
-        )}
-
         {isChild && units.length > 0 && <ChildReport session={session!} progress={progress} units={units} />}
+
+        {totalPlays > 0 && <PlaysChart units={units} plays={plays} />}
 
         <section className="card" style={{ marginTop: 18 }}>
           <h2 style={{ fontSize: 18, marginBottom: 8 }}>איך מלווים</h2>
@@ -61,7 +58,7 @@ function ChildReport({ session, progress, units }: { session: StudentSession; pr
   const visits = units.reduce((n, u) => n + (progress.positions[u.id]?.visits ?? 0), 0);
   const starsTotal = units.reduce((n, u) => n + (progress.positions[u.id] ? unitStars(u, progress) : 0), 0);
   const taught = new Set(units.flatMap((u) => u.skills));
-  const known = SKILL_ORDER.filter((s) => taught.has(s) && (mastery(progress.skills[s], 2) ?? 0) >= 0.7);
+  const known = SKILL_ORDER.filter((s) => taught.has(s) && skillLevel(s, units, progress) === 'known');
   return (
     <section className="card" style={{ marginTop: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
