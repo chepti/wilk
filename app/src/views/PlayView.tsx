@@ -140,7 +140,9 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
     return () => stopVoice();
   }, [idx]);
 
+  const assistRef = useRef<Assist | null>(null);
   const openAssist = (as: Assist) => {
+    assistRef.current = as;
     setAssist(as);
     const popup = !!as.a.text || as.always;
     playVoice(as.a.audio?.id).then(() => {
@@ -149,6 +151,8 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
   };
 
   const closeAssist = (as: Assist) => {
+    if (assistRef.current !== as) return; // כבר נסגר (דילוג + סוף השמע)
+    assistRef.current = null;
     stopVoice();
     setAssist(null);
     if (as.type === 'instructions') setActive(true);
@@ -166,7 +170,9 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
   };
 
   const goNext = useCallback((finished = false) => {
+    assistRef.current = null;
     stopVoice();
+    setAssist(null); // מעבר לא נתקע בגלל חלון הוראות פתוח
     sendResult(finished || stats.current.finished, idx + 1);
     if (idx + 1 >= total) {
       reportPosition(session, unit.id, total, total).catch(() => {});
@@ -178,7 +184,9 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
 
   const goPrev = () => {
     if (idx === 0) return;
+    assistRef.current = null;
     stopVoice();
+    setAssist(null);
     sendResult(false, idx - 1);
     setIdx(idx - 1);
   };
@@ -219,7 +227,18 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
         <div className="player-progress" title={`שקף ${idx + 1} מתוך ${total}`}>
           <div style={{ width: `${((idx + 1) / total) * 100}%` }} />
         </div>
-        <span className="player-count">{idx + 1}/{total}</span>
+        <SlideCounter
+          idx={idx} total={total} kinds={unit.slides.map((s) => s.kind)}
+          easy={session.token === 'teacher-preview'}
+          onJump={(to) => {
+            if (to === idx) return;
+            assistRef.current = null;
+            stopVoice();
+            setAssist(null);
+            sendResult(false, to);
+            setIdx(to);
+          }}
+        />
         {hasContent(instructions) && (
           <button className={`icon-btn${speaking ? ' speaking' : ''}`} aria-label="שמיעת ההוראות שוב" title="שמיעת ההוראות שוב"
             onClick={() => openAssist({ a: instructions, type: 'instructions', always: slide.kind === 'findAnswer' })}>
@@ -237,7 +256,8 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
         </PlayCtx.Provider>
 
         {assist && (
-          <div className="assist-backdrop">
+          // לחיצה מחוץ לחלון סוגרת אותו (כמו "הבנתי")
+          <div className="assist-backdrop" onClick={(e) => { if (e.target === e.currentTarget) closeAssist(assist); }}>
             {(assist.a.text || assist.always) && (
               <div className="assist-bubble pop-in" dir="auto">
                 <p>{assist.a.text || '1, 2, 3 Go!'}</p>
@@ -250,7 +270,7 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
               </div>
             )}
             {!assist.a.text && !assist.always && (
-              <div className="assist-listening"><IconVolume size={30} /></div>
+              <button className="assist-listening" onClick={() => closeAssist(assist)} aria-label="דילוג" title="דילוג"><IconVolume size={30} /></button>
             )}
           </div>
         )}
@@ -259,6 +279,58 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
         <button className="nav-arrow next" onClick={() => goNext(false)} aria-label="הבא"><IconChevronRight size={30} /></button>
       </div>
     </div>
+  );
+}
+
+const KIND_NAME: Record<string, string> = {
+  cover: 'שער', poster: 'פוסטר', video: 'סרטון', embed: 'סרטון', tappingBoard: 'הקשה ושמיעה',
+  findAnswer: 'מצא את התשובה', dragDrop: 'גרירה', cardQuiz: 'חידון קלפים', matching: 'התאמה',
+  memoryGame: 'זיכרון', flashcards: 'כרטיסיות',
+};
+
+/** מונה השקפים — לחיצה ארוכה פותחת תפריט מעבר לשקף (לא זמין בלחיצה סתמית) */
+function SlideCounter({ idx, total, kinds, easy, onJump }: {
+  idx: number; total: number; kinds: string[]; easy: boolean; onJump: (i: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pressing, setPressing] = useState(false);
+  const timer = useRef<number | null>(null);
+  const start = () => {
+    if (easy) return;
+    setPressing(true);
+    timer.current = window.setTimeout(() => { setOpen(true); setPressing(false); }, 700);
+  };
+  const cancel = () => {
+    setPressing(false);
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+  };
+  return (
+    <>
+      <button
+        className={`player-count tip-host${pressing ? ' pressing' : ''}`}
+        onPointerDown={start} onPointerUp={cancel} onPointerLeave={cancel} onPointerCancel={cancel}
+        onClick={() => easy && setOpen(true)}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {idx + 1}/{total}
+        <span className="tip">{easy ? 'מעבר לשקף' : 'לחיצה ארוכה — מעבר לשקף'}</span>
+      </button>
+      {open && (
+        <div className="slide-menu-backdrop" onClick={() => setOpen(false)}>
+          <div className="slide-menu pop-in" onClick={(e) => e.stopPropagation()}>
+            <h3>לאיזה שקף לעבור?</h3>
+            <div className="slide-menu-grid">
+              {kinds.map((k, i) => (
+                <button key={i} className={`slide-chip${i === idx ? ' cur' : ''}`} onClick={() => { setOpen(false); onJump(i); }}>
+                  <b>{i + 1}</b>
+                  <span>{KIND_NAME[k] ?? k}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

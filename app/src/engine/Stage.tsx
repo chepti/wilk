@@ -122,24 +122,29 @@ const cssColor = (c?: string) => (c && /^#[0-9a-f]{8}$/i.test(c) ? `#${c.slice(1
 
 export function RichText({ value, override }: { value: string; override?: string }) {
   const doc = parseRich(value);
-  const paras = override !== undefined
-    ? [{ children: [{ ...(doc.content[0]?.children[0] ?? { element: 'H1' }), text: override }], align: doc.content[0]?.align }]
-    : doc.content;
+  // כמו textValue של Jigzi: הטקסט נכנס לעלה האחרון שיש בו טקסט, והשאר נמחק
+  let paras = doc.content;
+  if (override !== undefined) {
+    const withText = doc.content.flatMap((p) => p.children.filter((c) => c.text).map((c) => ({ p, c })));
+    const last = withText[withText.length - 1];
+    paras = [{ children: [{ ...(last?.c ?? { element: 'H1' }), text: override }], align: last?.p.align }];
+  }
   return (
     <div className="rich" style={{ background: cssColor(doc.boxColor) }}>
       {paras.map((p, i) => (
         <p key={i} dir="auto" style={{ textAlign: p.align === 'Center' ? 'center' : p.align === 'Right' ? 'right' : undefined }}>
-          {p.children.length === 0 || p.children.every((c) => !c.text) ? <br /> : p.children.map((c, j) => (
+          {/* כמו ב-Jigzi: עלה ריק = <span><br/></span> עם הסגנון שלו — שורה ריקה בגובה מלא של הכותרת */}
+          {p.children.map((c, j) => (
             <span
               key={j}
-              data-type={c.element ?? 'H1'}
+              data-type={c.element}
               style={{
                 fontFamily: c.font, fontSize: c.fontSize ? `${c.fontSize}px` : undefined,
                 fontWeight: c.weight, color: cssColor(c.color), backgroundColor: cssColor(c.highlightColor),
                 fontStyle: c.italic ? 'italic' : undefined, textDecoration: c.underline ? 'underline' : undefined,
               }}
             >
-              {c.text}
+              {c.text === '' ? <br /> : c.text}
             </span>
           ))}
         </p>
@@ -163,7 +168,13 @@ export function TextView({ s, override, style, className, onPointerDown }: {
         ...style,
       }}
     >
-      <RichText value={s.value} override={override} />
+      {override === undefined ? <RichText value={s.value} /> : (
+        // Jigzi ממקם לפי מידות טקסט המקום ("Questions appear here") ומצייר את השאלה מהפינה השמאלית-עליונה שלו
+        <>
+          <div style={{ visibility: 'hidden' }}><RichText value={s.value} /></div>
+          <div style={{ position: 'absolute', left: 0, top: 0, width: 'max-content' }}><RichText value={s.value} override={override} /></div>
+        </>
+      )}
     </div>
   );
 }
