@@ -55,38 +55,21 @@ export default function PlayView({ unitId, jump, session, progress, onReported }
   }
 
   if (!started) {
-    const begin = (from: number) => {
-      // מחווה של המשתמש — פותחת שמע בדפדפן (בעיקר אייפד)
+    const begin = () => {
       try { new Audio().play().catch(() => {}); } catch { /* */ }
-      preloadAudio(collectAudio(unit, from));
-      setIdx(from);
+      preloadAudio(collectAudio(unit, resumeAt));
+      setIdx(resumeAt);
       setStarted(true);
     };
+    // נכנסו מהמפה (הייתה נגיעה בדף) — פותחים ישר את הפעילות, ממשיכים מהשקף שבו עצרו.
+    // רק כשהדף נפתח בלי שום נגיעה (קישור / רענון) צריך לחיצה אחת כדי שהדפדפן יתיר שמע.
+    const activated = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive ?? true;
+    if (activated) { queueMicrotask(begin); return <Centered><div className="loader" /></Centered>; }
     return (
-      <div className="night-sky">
+      <div className="night-sky" style={{ alignItems: 'center', justifyContent: 'center', gap: 14 }}>
         <SkyStars seed={unit.n} />
-        <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div className="card pop-in" style={{ textAlign: 'center', color: 'var(--ink)', maxWidth: 420, width: '100%' }}>
-            <DrawnStar size={70} />
-            <div style={{ fontSize: 15, color: 'var(--ink-soft)', fontWeight: 700 }}>תחנה {unit.n}</div>
-            <h1 dir="ltr" style={{ fontFamily: "'Fredoka One', sans-serif", fontWeight: 400, fontSize: 48, margin: '2px 0 18px' }}>{unit.title}</h1>
-            {resumeAt > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-                <button className="btn star" style={{ fontSize: 19, minWidth: 240 }} onClick={() => begin(resumeAt)}>
-                  <IconPlay size={18} /> ממשיכים משקף {resumeAt + 1}
-                </button>
-                <button className="btn secondary small" onClick={() => begin(0)}><IconRotate size={15} /> מההתחלה</button>
-              </div>
-            ) : (
-              <button className="btn star play-big" onClick={() => begin(0)} aria-label="מתחילים">
-                <IconPlay size={44} />
-              </button>
-            )}
-            <div style={{ marginTop: 18 }}>
-              <button className="pill" onClick={() => nav('/map')}><IconHome size={15} /> למפה</button>
-            </div>
-          </div>
-        </main>
+        <button className="btn star play-big" onClick={begin} aria-label="מתחילים"><IconPlay size={44} /></button>
+        <div dir="ltr" style={{ fontFamily: "'Fredoka One', sans-serif", fontSize: 30 }}>{unit.title}</div>
       </div>
     );
   }
@@ -224,6 +207,12 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
     <div className="player">
       <header className="player-bar">
         <button className="icon-btn" onClick={() => { stopVoice(); sendResult(false, idx); onExit(); }} aria-label="למפה" title="למפה"><IconHome size={20} /></button>
+        <button
+          className="icon-btn subtle" aria-label="מההתחלה" title="מההתחלה" disabled={idx === 0}
+          onClick={() => { assistRef.current = null; stopVoice(); setAssist(null); sendResult(false, 0); setIdx(0); }}
+        >
+          <IconRotate size={18} />
+        </button>
         <div className="player-progress" title={`שקף ${idx + 1} מתוך ${total}`}>
           <div style={{ width: `${((idx + 1) / total) * 100}%` }} />
         </div>

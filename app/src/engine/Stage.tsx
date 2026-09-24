@@ -153,28 +153,43 @@ export function RichText({ value, override }: { value: string; override?: string
   );
 }
 
+/**
+ * מדבקת טקסט — בדיוק כמו Jigzi (components/src/stickers/text/dom.rs):
+ * מודדים את התיבה ברוחב טבעי (שורה לא שבורה), וממקמים לפיה כך שמרכזה בנקודת המדבקה.
+ * התיבה עצמה מוגבלת לשפת הבמה — שורה ארוכה נשברת שם ויורדת למטה (על זה צוירו אזורי המגע).
+ * בשאלות (override) המידות והמיקום נלקחים מטקסט המקום המקורי.
+ */
 export function TextView({ s, override, style, className, onPointerDown }: {
   s: TextSticker['Text']; override?: string; style?: React.CSSProperties; className?: string;
   onPointerDown?: (e: React.PointerEvent) => void;
 }) {
   const t = s.transform;
+  const meas = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<[number, number] | null>(null);
+  useLayoutEffect(() => {
+    const el = meas.current;
+    if (!el) return;
+    const read = () => setSize((p) => (p && p[0] === el.offsetWidth && p[1] === el.offsetHeight ? p : [el.offsetWidth, el.offsetHeight]));
+    read();
+    document.fonts?.ready.then(read).catch(() => {});
+  }, [s.value]);
+  const [w, h] = size ?? [0, 0];
+  const left = W / 2 + t.translation[0] * W - w / 2;
+  const top = H / 2 + t.translation[1] * H - h / 2;
   return (
     <div
       className={`sticker text-sticker ${className ?? ''}`}
       onPointerDown={onPointerDown}
       style={{
-        left: W / 2 + t.translation[0] * W, top: H / 2 + t.translation[1] * H,
-        transform: `translate(-50%, -50%) rotate(${angle(t)}rad)`,
+        left, top, maxWidth: Math.max(40, W - left),
+        transformOrigin: `${w / 2}px ${h / 2}px`,
+        transform: `rotate(${angle(t)}rad)`,
+        visibility: size ? undefined : 'hidden',
         ...style,
       }}
     >
-      {override === undefined ? <RichText value={s.value} /> : (
-        // Jigzi ממקם לפי מידות טקסט המקום ("Questions appear here") ומצייר את השאלה מהפינה השמאלית-עליונה שלו
-        <>
-          <div style={{ visibility: 'hidden' }}><RichText value={s.value} /></div>
-          <div style={{ position: 'absolute', left: 0, top: 0, width: 'max-content' }}><RichText value={s.value} override={override} /></div>
-        </>
-      )}
+      <RichText value={s.value} override={override} />
+      <div ref={meas} className="text-measure" aria-hidden="true"><RichText value={s.value} /></div>
     </div>
   );
 }
