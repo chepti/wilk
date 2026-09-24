@@ -1,0 +1,12 @@
+app/node_modules/
+app/dist/
+app/.claude/
+api/data/
+api/config.php
+# מדיה כבדה — נבנית מהארכיון (tools/build-content.mjs, fetch-ui.mjs); הארכיון מגובה בשרת ב-~/wilk_archive
+archive/media/
+archive/ui/
+app/public/media/
+app/public/ui/
+app/public/sfx/
+.claude/

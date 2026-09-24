@@ -1,0 +1,179 @@
+[
+ {
+  "id": "u1",
+  "n": 1,
+  "title": "c · a",
+  "skills": [
+   "c",
+   "a"
+  ],
+  "slides": 8
+ },
+ {
+  "id": "u2",
+  "n": 2,
+  "title": "t · s",
+  "skills": [
+   "t",
+   "s"
+  ],
+  "slides": 12
+ },
+ {
+  "id": "u3",
+  "n": 3,
+  "title": "h · r",
+  "skills": [
+   "h",
+   "r"
+  ],
+  "slides": 15
+ },
+ {
+  "id": "u4",
+  "n": 4,
+  "title": "f · m",
+  "skills": [
+   "f",
+   "m"
+  ],
+  "slides": 19
+ },
+ {
+  "id": "u5",
+  "n": 5,
+  "title": "n",
+  "skills": [
+   "n"
+  ],
+  "slides": 15
+ },
+ {
+  "id": "u6",
+  "n": 6,
+  "title": "O · P · on",
+  "skills": [
+   "o",
+   "p",
+   "on"
+  ],
+  "slides": 18
+ },
+ {
+  "id": "u7",
+  "n": 7,
+  "title": "E",
+  "skills": [
+   "e"
+  ],
+  "slides": 12
+ },
+ {
+  "id": "u8",
+  "n": 8,
+  "title": "k · l",
+  "skills": [
+   "k",
+   "l"
+  ],
+  "slides": 14
+ },
+ {
+  "id": "u9",
+  "n": 9,
+  "title": "b · ck",
+  "skills": [
+   "b",
+   "ck"
+  ],
+  "slides": 10
+ },
+ {
+  "id": "u10",
+  "n": 10,
+  "title": "g · d",
+  "skills": [
+   "g",
+   "d"
+  ],
+  "slides": 17
+ },
+ {
+  "id": "u11",
+  "n": 11,
+  "title": "i · in",
+  "skills": [
+   "i",
+   "in"
+  ],
+  "slides": 9
+ },
+ {
+  "id": "u12",
+  "n": 12,
+  "title": "v · and",
+  "skills": [
+   "v",
+   "and"
+  ],
+  "slides": 10
+ },
+ {
+  "id": "u13",
+  "n": 13,
+  "title": "x · can",
+  "skills": [
+   "x",
+   "can"
+  ],
+  "slides": 10
+ },
+ {
+  "id": "u14",
+  "n": 14,
+  "title": "j · z",
+  "skills": [
+   "j",
+   "z"
+  ],
+  "slides": 14
+ },
+ {
+  "id": "u15",
+  "n": 15,
+  "title": "u",
+  "skills": [
+   "u"
+  ],
+  "slides": 12
+ },
+ {
+  "id": "u16",
+  "n": 16,
+  "title": "q · qu",
+  "skills": [
+   "q",
+   "qu"
+  ],
+  "slides": 8
+ },
+ {
+  "id": "u17",
+  "n": 17,
+  "title": "y",
+  "skills": [
+   "y"
+  ],
+  "slides": 7
+ },
+ {
+  "id": "u18",
+  "n": 18,
+  "title": "w · ow",
+  "skills": [
+   "w",
+   "ow"
+  ],
+  "slides": 12
+ }
+]

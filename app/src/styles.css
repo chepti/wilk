@@ -1,0 +1,148 @@
+@font-face {
+  font-family: 'Heebo';
+  src: url('/fonts/heebo-var.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --night: #16224a;
+  --night-2: #243578;
+  --sky: #3b5bdb;
+  --sky-soft: #e0e7ff;
+  --star: #f5b82e;
+  --star-dark: #c98a06;
+  --star-soft: #fff4d6;
+  --ink: #1e293b;
+  --ink-soft: #52607a;
+  --paper: #f7f5ff;
+  --card: #ffffff;
+  --green: #16a34a;
+  --green-soft: #dcfce7;
+  --red: #dc2626;
+  --red-soft: #fee2e2;
+  --radius: 18px;
+  --shadow: 0 2px 10px rgba(22, 34, 74, 0.1);
+  --shadow-lg: 0 12px 32px rgba(22, 34, 74, 0.2);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: 'Heebo', system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+button { font-family: inherit; cursor: pointer; }
+input, textarea, select { font-family: inherit; }
+h1, h2, h3 { margin: 0; }
+a { color: var(--sky); }
+
+/* ── כפתורים: pill ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: none; border-radius: 999px;
+  padding: 12px 28px; font-size: 17px; font-weight: 700;
+  background: var(--sky); color: #fff;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s;
+  box-shadow: var(--shadow); text-decoration: none;
+}
+.btn:hover { background: var(--night-2); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { background: #cbd5e1; cursor: default; transform: none; box-shadow: none; }
+.btn.star { background: var(--star); color: var(--night); }
+.btn.star:hover { background: #ffc94d; }
+.btn.ghost { background: rgba(255, 255, 255, 0.14); color: #fff; box-shadow: none; border: 1.5px solid rgba(255, 255, 255, 0.5); }
+.btn.ghost:hover { background: rgba(255, 255, 255, 0.24); }
+.btn.secondary { background: #fff; color: var(--night); border: 2px solid var(--sky-soft); }
+.btn.secondary:hover { background: var(--sky-soft); }
+.btn.small { padding: 7px 16px; font-size: 14px; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1.5px solid #cbd5e1; background: #fff; color: var(--ink-soft);
+  border-radius: 999px; padding: 6px 14px; font-size: 13.5px; font-weight: 700;
+  text-decoration: none; transition: all 0.15s;
+}
+.pill:hover { border-color: var(--sky); color: var(--night); background: var(--sky-soft); }
+
+.icon-btn {
+  width: 44px; height: 44px; border-radius: 999px; border: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.92); color: var(--night); box-shadow: var(--shadow);
+  transition: transform 0.12s, background 0.12s;
+}
+.icon-btn:hover { transform: scale(1.07); background: #fff; }
+.icon-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
+
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px; }
+
+.field {
+  width: 100%; border: 2px solid #e2e8f0; border-radius: 14px;
+  padding: 12px 14px; font-size: 17px; background: #fff; color: var(--ink); outline: none;
+  transition: border-color 0.15s;
+}
+.field:focus { border-color: var(--sky); }
+.err { color: var(--red); font-size: 14px; margin: 8px 0 0; }
+
+/* ── טולטיפ: טקסט משני מופיע בריחוף ── */
+.tip-host { position: relative; display: inline-block; }
+.tip {
+  position: absolute; bottom: calc(100% + 10px); left: 50%;
+  transform: translateX(-50%) translateY(4px); opacity: 0; pointer-events: none;
+  transition: opacity 0.15s, transform 0.15s;
+  width: max-content; max-width: min(260px, 80vw); white-space: normal;
+  background: var(--night); color: #fff; padding: 8px 12px; border-radius: 10px;
+  font-size: 13px; font-weight: 400; line-height: 1.45; text-align: right;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); z-index: 50;
+}
+.tip-host:hover .tip, .tip-host:focus-within .tip { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── פוטר ── */
+.site-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 14px 20px; font-size: 13px; color: var(--ink-soft);
+}
+.site-footer a { color: var(--night-2); font-weight: 700; }
+.site-footer .dot { margin: 0 6px; }
+.site-footer.light { color: rgba(255, 255, 255, 0.75); }
+.site-footer.light a:not(.pill) { color: #fff; }
+.site-footer.light .pill { background: rgba(255, 255, 255, 0.12); color: #fff; border-color: rgba(255, 255, 255, 0.4); }
+
+/* ── שמי כוכבים ── */
+.night-sky {
+  min-height: 100vh; display: flex; flex-direction: column;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(91, 118, 240, 0.45), transparent 60%),
+    radial-gradient(900px 500px at 0% 110%, rgba(245, 184, 46, 0.18), transparent 60%),
+    linear-gradient(180deg, #111a3d 0%, #1b2a5e 55%, #26387a 100%);
+  color: #fff; position: relative; overflow: hidden;
+}
+.night-sky > .sky-stars { position: absolute; inset: 0; pointer-events: none; }
+.night-sky > * { position: relative; }
+
+/* ── בחירת תמונה ── */
+.avatar-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.avatar-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 0 6px; border-radius: 14px; border: 2px solid #e2e8f0; background: #fff;
+  transition: all 0.12s;
+}
+.avatar-btn .e { font-size: 28px; line-height: 1.1; }
+.avatar-btn .n { font-size: 12px; color: var(--ink-soft); font-weight: 700; }
+.avatar-btn.on { border: 3px solid var(--star); background: var(--star-soft); transform: scale(1.06); }
+
+/* ── אנימציות ── */
+@keyframes pop-in { 0% { transform: scale(0.7); opacity: 0; } 70% { transform: scale(1.06); } 100% { transform: scale(1); opacity: 1; } }
+.pop-in { animation: pop-in 0.35s ease both; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.shake { animation: shake 0.3s ease; }
+@keyframes float-up { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.float-up { animation: float-up 0.4s ease both; }
+@keyframes twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@keyframes pulse-ring { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 184, 46, 0.6); } 50% { box-shadow: 0 0 0 12px rgba(245, 184, 46, 0); } }

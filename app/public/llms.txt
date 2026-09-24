@@ -1,0 +1,17 @@
+# English through the Stars (WILK)
+
+> 18 interactive units for learning English letters and sounds (Hebrew-speaking kids, grades 2-3), following Pnina Wilk's method. Digital version by Hefzi Ben Artzi (chepti.com). Students join a class with a 6-digit code + first name + a picture; teachers see a heatmap of mastery per letter/sound and where each student stopped.
+
+## For agents
+
+- [API self-description (no auth)](https://chepti.com/wilk/api/?action=help): every action, argument and example as JSON
+- [AGENT.md](https://chepti.com/wilk/AGENT.md): ready-to-paste system prompt for operating the app as a teacher
+- Auth: POST `?action=login` {"email","password"} → token; send `Authorization: Bearer <token>` (or `X-Key: <token>`, or `?key=`)
+- `GET ?action=state` → compact snapshot (classes, students, units done, where they stopped, weakest sounds)
+- `POST ?action=ops` {"ops":[...]} → batch of create_class / rename_class / set_free / heatmap / delete_student / reset_student, per-op result
+- Classes and students can be addressed by readable name (`"match"`, `"student"`); ambiguous → HTTP 409 with candidates
+
+## Content
+
+- Units: https://chepti.com/wilk/content/units.json (id, letters/sounds taught, slide count)
+- Student entry: https://chepti.com/wilk/#/join/<code>

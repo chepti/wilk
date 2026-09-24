@@ -1,0 +1,10 @@
+# מעביר את כותרת Authorization ל-PHP (חלק משרתי Apache/LiteSpeed מפילים אותה)
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# אין גישה ישירה לקבצי עזר ולנתונים
+<FilesMatch "^(db|config|teacher_lib)\.php$">
+  Require all denied
+</FilesMatch>
