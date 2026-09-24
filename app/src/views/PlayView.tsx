@@ -262,7 +262,7 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
   );
 }
 
-function SlideBody({ kind, c }: { kind: string; c: any }) {
+export function SlideBody({ kind, c }: { kind: string; c: any }) {
   switch (kind) {
     case 'tappingBoard': return <TappingBoard c={c} />;
     case 'findAnswer': return <FindAnswer c={c} />;
