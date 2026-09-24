@@ -13,7 +13,6 @@ const OUT = path.join(ROOT, 'app', 'public', 'previews');
 
 const TARGETS = {
   slides: 'https://www.canva.com/design/DAF0magLs4E/view',
-  checks: 'https://chepti.com/check/',
   direction: 'https://www.turtlediary.com/game/write-lowercase-letters.html',
   playlist: 'https://www.youtube.com/playlist?list=PLJRbNE3_dNnhs52hJ1CMT-m04DDAIUn9R',
   whatsapp: 'https://chat.whatsapp.com/HwsWj1vRqhuBSB5Czek25a',

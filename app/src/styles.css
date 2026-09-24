@@ -92,6 +92,7 @@ a { color: var(--sky); }
 
 /* ── טולטיפ: טקסט משני מופיע בריחוף ── */
 .tip-host { position: relative; display: inline-block; }
+td.tip-host, th.tip-host { display: table-cell; } /* בתוך טבלה — לא לשבור את מבנה הטבלה */
 .tip {
   position: absolute; bottom: calc(100% + 10px); left: 50%;
   transform: translateX(-50%) translateY(4px); opacity: 0; pointer-events: none;

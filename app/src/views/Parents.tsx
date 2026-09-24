@@ -33,7 +33,6 @@ export default function Parents({ session, progress }: { session: StudentSession
         <p style={{ color: 'var(--ink-soft)', marginTop: 0, lineHeight: 1.6, maxWidth: 760 }}>{ABOUT}</p>
         {isChild && units.length > 0 && <ChildReport session={session!} progress={progress} units={units} />}
 
-        {totalPlays > 0 && <PlaysChart units={units} plays={plays} />}
 
         <section className="card" style={{ marginTop: 18 }}>
           <h2 style={{ fontSize: 18, marginBottom: 8 }}>איך מלווים</h2>
@@ -46,6 +45,7 @@ export default function Parents({ session, progress }: { session: StudentSession
         </section>
 
         <ResourcesPanel audience="parent" />
+        {totalPlays > 0 && <PlaysChart units={units} plays={plays} />}
         <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 20 }}>{RIGHTS}</p>
       </main>
       <Footer />

@@ -48,23 +48,13 @@ export const RESOURCES: Resource[] = [
     links: [{ label: 'הורדת החוברת (PDF)', href: TEXTS_PDF }],
   },
   {
-    id: 'slides', icon: 'slides', previews: ['slides'], audience: ['teacher'],
+    id: 'slides', icon: 'slides', previews: ['slides'], audience: ['teacher', 'parent'],
     title: 'מצגת למורה',
-    desc: 'אנימציות של האותיות לפי סדר הלמידה בתוכנית (האנימציות אילמות).',
-    links: [{ label: 'הצגת המצגת', href: 'https://www.canva.com/design/DAF0magLs4E/view' }],
+    desc: 'אנימציות של כל האותיות לפי סדר הלמידה בתוכנית — להצגה בכיתה או בבית (האנימציות אילמות).',
+    links: [{ label: 'הצגת המצגת', href: 'https://www.canva.com/design/DAF0magLs4E/view?utm_content=DAF0magLs4E&utm_campaign=designshare&utm_medium=embeds&utm_source=link' }],
   },
-  {
-    id: 'checks', icon: 'check', previews: ['checks'], audience: ['teacher'],
-    title: 'ערכת מבדקים',
-    desc: 'להערכת ההתקדמות לאורך התוכנית.',
-    links: [{ label: 'למבדקים', href: 'https://chepti.com/check/' }],
-  },
-  {
-    id: 'direction', icon: 'pen', previews: ['direction'], audience: ['teacher', 'parent'],
-    title: 'תרגול כיוון הכתיבה',
-    desc: 'משחק לתרגול כיוון כתיבת האותיות הקטנות.',
-    links: [{ label: 'למשחק', href: 'https://www.turtlediary.com/game/write-lowercase-letters.html' }],
-  },
+
+
   {
     id: 'playlist', icon: 'video', previews: ['playlist'], audience: ['teacher', 'parent'],
     title: 'כל הסרטונים ביוטיוב',
@@ -78,6 +68,11 @@ export const RESOURCES: Resource[] = [
     links: [{ label: 'הצטרפות לקבוצה', href: 'https://chat.whatsapp.com/HwsWj1vRqhuBSB5Czek25a' }],
   },
   {
+    id: 'direction', icon: 'pen', previews: ['direction'], audience: ['teacher', 'parent'],
+    title: 'תרגול כיוון הכתיבה',
+    desc: 'משחק לתרגול כיוון כתיבת האותיות הקטנות.',
+    links: [{ label: 'למשחק', href: 'https://www.turtlediary.com/game/write-lowercase-letters.html' }],
+  },  {
     id: 'feedback', icon: 'message', previews: ['feedback'], audience: ['teacher', 'parent'],
     title: 'משוב',
     desc: 'ספרו לנו מה אהבתם ומה כדאי לשפר.',

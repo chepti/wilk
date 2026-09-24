@@ -11,6 +11,9 @@ import { unitStars } from './StarMap';
 import ResourcesPanel from '../ui/Resources';
 import PlaysChart from '../ui/PlaysChart';
 import { fetchPlays } from '../lib/api';
+import { skillLevel, unitQuality } from '../data/stars';
+import Footer from '../ui/Footer';
+import { IconLogOut, IconPlus, IconCopy, IconEye, IconRefresh, IconTrash, IconUsers, IconGrid, IconArrowRight, IconCheck } from '../ui/icons';
 
 /** כניסות לכל תחנה בכל האתר (לא רק בכיתה) */
 function SitePlays() {
@@ -19,8 +22,6 @@ function SitePlays() {
   useEffect(() => { loadCatalog().then(setUnits); fetchPlays().then(setPlays); }, []);
   return <PlaysChart units={units} plays={plays} />;
 }
-import Footer from '../ui/Footer';
-import { IconLogOut, IconPlus, IconCopy, IconEye, IconRefresh, IconTrash, IconUsers, IconGrid, IconArrowRight, IconCheck } from '../ui/icons';
 
 export default function Teacher() {
   const [t, setT] = useState<TeacherSession | null>(loadTeacher());
@@ -120,8 +121,8 @@ function Dashboard({ t, onOut }: { t: TeacherSession; onOut: () => void }) {
         {cls ? <ClassView t={t} cls={cls} onChange={reload} /> : (
           <div className="card" style={{ textAlign: 'center', color: 'var(--ink-soft)' }}>צרו כיתה ראשונה — תקבלו קוד בן 6 ספרות שהתלמידים מקלידים</div>
         )}
-        <SitePlays />
         <ResourcesPanel audience="teacher" />
+        <SitePlays />
       </main>
       <Footer />
     </div>
@@ -204,14 +205,31 @@ function StudentCell({ s, onDelete }: { s: HeatmapStudent; onDelete?: () => void
   );
 }
 
+/** תא בטבלת האותיות: רמה (עבודה אמיתית = דיוק + כיסוי התחנה), דיוק בניסיון ראשון, כיסוי */
+function skillCell(k: string, s: HeatmapStudent, units: UnitMeta[]) {
+  const st = s.skills[k];
+  const n = st ? st.c + st.w : 0;
+  const acc = n ? st!.c / n : null;
+  const unit = units.find((u) => u.skills.includes(k));
+  const cover = unit ? unitQuality(unit.id, unit.kinds, s.slides) : 0;
+  const level = skillLevel(k, units, s);
+  const kind: 'known' | 'low' | 'progress' | 'none' =
+    level === 'known' ? 'known' : level === 'none' ? 'none' : n >= 3 && acc! < 0.5 ? 'low' : 'progress';
+  return { st, acc, cover, kind };
+}
+
+const LEVEL_STYLE = {
+  known: { bg: '#16a34a', fg: '#fff' },
+  progress: { bg: '#fde68a', fg: '#713f12' },
+  low: { bg: '#fca5a5', fg: '#7f1d1d' },
+  none: { bg: '#f1f5f9', fg: '#94a3b8' },
+} as const;
+
 function SkillsHeatmap({ students, units, onDelete }: { students: HeatmapStudent[]; units: UnitMeta[]; onDelete: (s: HeatmapStudent) => void }) {
   const taught = new Set(units.flatMap((u) => u.skills));
   const skills = SKILL_ORDER.filter((s) => taught.has(s));
-  // ממוצע כיתתי לכל צליל — עוזר לראות מה הכיתה צריכה לתרגל
-  const classAvg = skills.map((k) => {
-    const vals = students.map((s) => mastery(s.skills[k])).filter((m): m is number => m !== null);
-    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-  });
+  // לכל צליל: כמה תלמידים באמת מכירים — עוזר לראות מה הכיתה צריכה לתרגל
+  const knownCount = skills.map((k) => students.filter((s) => skillCell(k, s, units).kind === 'known').length);
   return (
     <div className="hm-scroll">
       <table className="hm">
@@ -226,21 +244,29 @@ function SkillsHeatmap({ students, units, onDelete }: { students: HeatmapStudent
             <tr key={s.id}>
               <StudentCell s={s} onDelete={() => onDelete(s)} />
               {skills.map((k) => {
-                const st = s.skills[k];
-                const m = mastery(st);
-                const h = heat(m);
+                const c = skillCell(k, s, units);
+                const h = LEVEL_STYLE[c.kind];
                 return (
-                  <td key={k} className="hm-cell tip-host" style={{ background: h.bg, color: h.fg }}>
-                    {m === null ? '' : Math.round(m * 100)}
-                    <span className="tip">{st ? `${st.c} נכון · ${st.w} טעויות` : 'עוד אין נתונים'}</span>
+                  <td key={k} className={`hm-cell tip-host lvl-${c.kind}`} style={{ background: h.bg, color: h.fg }}>
+                    {c.acc === null ? (c.cover > 0 ? '·' : '') : Math.round(c.acc * 100)}
+                    <span className="tip">
+                      {c.kind === 'known' ? 'מכיר/ה' : c.kind === 'low' ? 'דיוק נמוך — כדאי לחזור' : c.kind === 'progress' ? 'בדרך' : 'עוד לא תרגל/ה'}
+                      {c.st ? ` · דיוק בניסיון ראשון ${Math.round(c.acc! * 100)}% (${c.st.c} נכון, ${c.st.w} טעויות)` : ''}
+                      {` · התחנה בוצעה ${Math.round(c.cover * 100)}%`}
+                    </span>
                   </td>
                 );
               })}
             </tr>
           ))}
           <tr className="hm-avg">
-            <td className="hm-name">ממוצע כיתה</td>
-            {classAvg.map((m, i) => { const h = heat(m); return <td key={i} className="hm-cell" style={{ background: h.bg, color: h.fg }}>{m === null ? '' : Math.round(m * 100)}</td>; })}
+            <td className="hm-name">מכירים</td>
+            {knownCount.map((n, i) => (
+              <td key={i} className="hm-cell tip-host" style={{ background: '#fff', color: n ? '#16a34a' : '#94a3b8' }}>
+                {n}/{students.length}
+                <span className="tip">{n} מתוך {students.length} תלמידים מכירים את <span dir="ltr">{skills[i]}</span></span>
+              </td>
+            ))}
           </tr>
         </tbody>
       </table>
@@ -316,11 +342,11 @@ function StarGlyph() {
 }
 
 function Legend() {
-  const items: [string, number | null][] = [['85%+', 0.9], ['70–84%', 0.75], ['50–69%', 0.6], ['מתחת ל-50%', 0.3], ['אין נתונים', null]];
+  const items: [string, keyof typeof LEVEL_STYLE][] = [['מכיר/ה', 'known'], ['בדרך', 'progress'], ['דיוק נמוך', 'low'], ['עוד לא תרגל/ה', 'none']];
   return (
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 10, fontSize: 13, color: 'var(--ink-soft)' }}>
-      {items.map(([l, m]) => <span key={l} style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><i style={{ width: 14, height: 14, borderRadius: 4, background: heat(m).bg, display: 'inline-block' }} />{l}</span>)}
-      <span>· שליטה = אחוז הצלחה בניסיון הראשון (מ-3 ניסיונות ומעלה)</span>
+      {items.map(([l, k]) => <span key={l} style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><i style={{ width: 14, height: 14, borderRadius: 4, background: LEVEL_STYLE[k].bg, display: 'inline-block' }} />{l}</span>)}
+      <span>· המספר = דיוק בניסיון הראשון. "מכיר/ה" רק כשהדיוק 70%+ וגם התחנה בוצעה (3 כוכבים ומעלה) — דילוגים לא נחשבים שליטה</span>
     </div>
   );
 }
