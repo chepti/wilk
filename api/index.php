@@ -33,7 +33,8 @@ case 'help':
         'actions' => [
             'help'  => 'GET — this document. No auth.',
             'login' => 'POST {"email":"...","password":"..."} → {"token","name","email"}',
-            'state' => 'GET — compact snapshot: your classes, and per student: units done, where they stopped, weakest sounds. Optional &class=<id|code|name part>.',
+            'state' => 'GET — compact snapshot: your classes, and per student: units done (unit → best stars 0–5), where they stopped, weakest sounds. Optional &class=<id|code|name part>.',
+            'plays' => 'GET student.php?a=plays — public: total unit entries on the site since the move from Jigzi.',
             'ops'   => 'POST {"ops":[{"op":"<name>", ...args}]} — runs each op, returns per-op {ok, result|error}. Ops never abort each other.',
         ],
         'ops' => [
@@ -69,7 +70,7 @@ case 'state': {
             $done = [];
             $current = null;
             foreach ((array)$s['positions'] as $u => $p) {
-                if ($p['completed']) $done[] = $u;
+                if ($p['completed']) $done[$u] = $p['stars'];
                 elseif (!$current || $p['at'] > $current['at']) $current = ['unit' => $u, 'slide' => $p['slide'], 'at' => $p['at']];
             }
             $weak = [];
@@ -81,7 +82,7 @@ case 'state': {
             $students[] = [
                 'name' => $s['nickname'] . ' ' . $s['emoji'],
                 'lastSeen' => $s['lastSeen'],
-                'unitsDone' => $done,
+                'unitsDone' => $done ?: new stdClass(),   // unit → best stars (0–5)
                 'stoppedAt' => $current ? $current['unit'] . '#' . ($current['slide'] + 1) : null,
                 'weakest' => array_slice($weak, 0, 3, true) ?: new stdClass(),
             ];

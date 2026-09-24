@@ -5,6 +5,7 @@ import Join from './views/Join';
 import StarMap from './views/StarMap';
 import PlayView from './views/PlayView';
 import Teacher from './views/Teacher';
+import Parents from './views/Parents';
 import { BASE } from './lib/mediaPaths';
 
 // ניתוב מבוסס hash — עובד בכל אחסון סטטי בלי הגדרות שרת.
@@ -52,6 +53,7 @@ export default function App() {
   const route = parts[0] || '';
 
   if (route === 'teacher') return <Teacher />;
+  if (route === 'parents') return <Parents session={session} progress={progress} />;
   if (route === 'join') {
     return <Join initialCode={parts[1] || ''} onJoined={(s) => { setSession(s); nav('/map'); }} />;
   }

@@ -4,6 +4,7 @@ import { Backgrounds, Stickers, TraceLayer, type TraceLook } from '../engine/Sta
 import { usePlay, shuffle, wait } from '../engine/play';
 import { playVoice, stopVoice, playPositive, playNegative } from '../lib/audio';
 import { TraceBubble } from './TappingBoard';
+import { Q } from '../data/stars';
 
 // מצא את התשובה: לכל שאלה אזורים נכונים (Correct) — צריך לגעת בכולם.
 // נגיעה מחוץ לאזורים / באזור Wrong = טעות. אחרי n טעויות — רמז קצר.
@@ -20,6 +21,8 @@ export default function FindAnswer({ c }: { c: FindAnswerContent }) {
   const wrongStreak = useRef(0);
   const failedThisQ = useRef(0);
   const ended = useRef(false);
+  const hinted = useRef(false);
+  const scores = useRef<number[]>([]); // איכות לכל שאלה (לכוכבים)
   const q = questions[qi];
 
   const textIdx = typeof c.question_field === 'object' && c.question_field && 'Text' in c.question_field ? (c.question_field as { Text: number }).Text : null;
@@ -31,6 +34,7 @@ export default function FindAnswer({ c }: { c: FindAnswerContent }) {
     ended.current = false;
     failedThisQ.current = 0;
     wrongStreak.current = 0;
+    hinted.current = false;
     setSelected(new Set());
     if (q.question_audio) {
       setBusy(true);
@@ -63,6 +67,7 @@ export default function FindAnswer({ c }: { c: FindAnswerContent }) {
     const limit = c.play_settings.n_attempts ?? null;
     if (limit && wrongStreak.current >= limit) {
       wrongStreak.current = 0;
+      hinted.current = true; // המערכת גילתה — השאלה שווה פחות בכוכבים
       setHint(true);
       await wait(1400);
       setHint(false);
@@ -82,6 +87,9 @@ export default function FindAnswer({ c }: { c: FindAnswerContent }) {
     if (done) ended.current = true;
     // כמו ב-Jigzi: נגיעה חדשה קוטעת את ההקלטה הקודמת (לא חוסמים), רק האחרונה מקדמת
     if (failedThisQ.current === 0 && done) play.record(true, q.question_text);
+    const factor = hinted.current ? Q.hinted : failedThisQ.current ? Q.retry : Q.first;
+    scores.current[qi] = (correctIdx.filter((k) => next.has(k)).length / Math.max(1, correctIdx.length)) * factor;
+    play.progress(scores.current.reduce((a, b) => a + (b ?? 0), 0) / questions.length);
     stopVoice();
     await playPositive();
     if (t.audio) {

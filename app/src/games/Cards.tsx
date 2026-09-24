@@ -5,6 +5,7 @@ import { cardBack } from '../engine/theme';
 import { mediaUrl } from '../lib/mediaPaths';
 import { usePlay, shuffle, wait } from '../engine/play';
 import { playVoice, stopVoice, playPositive, playNegative, playFlip } from '../lib/audio';
+import { Q } from '../data/stars';
 
 // ── קלף משותף ──
 
@@ -96,6 +97,7 @@ export function CardQuiz({ c }: { c: CardGameContent }) {
   const [flippedWrong, setFlippedWrong] = useState<Set<number>>(new Set());
   const [won, setWon] = useState<number | null>(null);
   const failed = useRef(0);
+  const roundQ = useRef<number[]>([]); // איכות לכל סבב (לכוכבים)
   const swap = !!ps.swap;
   const round = rounds[r];
   const tSide = swap ? 1 : 0;
@@ -113,6 +115,8 @@ export function CardQuiz({ c }: { c: CardGameContent }) {
     if (i === round.target) {
       setWon(i);
       if (failed.current === 0) play.record(true, cardText(pairs[i][0]) || cardText(pairs[i][1]));
+      roundQ.current[r] = failed.current ? Q.retry : Q.first;
+      play.progress(roundQ.current.reduce((a, b) => a + (b ?? 0), 0) / rounds.length);
       if (card.audio) await playVoice(card.audio.id);
       await playPositive();
       await wait(1600);
@@ -165,6 +169,7 @@ export function Matching({ c }: { c: CardGameContent }) {
   const [over, setOver] = useState<number | null>(null);
   const slotEls = useRef<Record<number, HTMLDivElement | null>>({});
   const tries = useRef<Record<number, number>>({});
+  const matchQ = useRef<Record<string, number>>({}); // "סבב:זוג" → איכות
   const swap = !!ps.swap;
   const top = swap ? 1 : 0;
   const bot = swap ? 0 : 1;
@@ -220,6 +225,9 @@ export function Matching({ c }: { c: CardGameContent }) {
       return;
     }
     if (!tries.current[i]) play.record(true, word);
+    matchQ.current[`${r}:${i}`] = tries.current[i] ? Q.retry : Q.first;
+    const allItems = rounds.reduce((s, rd) => s + rd.choices.length, 0);
+    play.progress(Object.values(matchQ.current).reduce((a, b) => a + b, 0) / Math.max(1, allItems));
     const next = new Set(landed).add(i);
     setLanded(next);
     await playPositive();
@@ -301,6 +309,7 @@ export function Memory({ c }: { c: CardGameContent }) {
       await playPositive();
       const nf = [...found, cards[k].p];
       setFound(nf);
+      play.progress(nf.length / (count / 2));
       setUp([]);
       lock.current = false;
       if (nf.length * 2 >= count) { await wait(900); play.finish(); }
@@ -362,6 +371,7 @@ export function Flashcards({ c }: { c: CardGameContent }) {
 
   const next = () => {
     token.current++;
+    play.progress((i + 1) / total); // כמה כרטיסים נצפו
     if (i + 1 >= total) play.finish();
     else setI(i + 1);
   };

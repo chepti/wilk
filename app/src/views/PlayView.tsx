@@ -2,7 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import confetti from 'canvas-confetti';
 import { nav } from '../App';
 import type { StudentSession, ProgressData, SkillStat } from '../lib/api';
-import { reportPosition, reportResult } from '../lib/api';
+import { reportPosition, reportResult, reportVisit } from '../lib/api';
+import { STAR_KINDS, starsFor, unitQuality, weakSlides } from '../data/stars';
+import { BOOKLET_PDF, BOOKLET_PAGE, TEXTS_PDF, TEXTS_PAGE, FINALE, pdfPage } from '../data/resources';
+import StarRow from '../ui/StarRow';
 import { loadUnit, loadCatalog, SCORED_KINDS, type UnitMeta } from '../data/units';
 import { loadThemes } from '../engine/theme';
 import type { Instructions, UnitContent } from '../engine/types';
@@ -15,7 +18,7 @@ import DragDrop from '../games/DragDrop';
 import { CardQuiz, Matching, Memory, Flashcards } from '../games/Cards';
 import { Cover, VideoSlide } from '../games/Design';
 import SkyStars, { DrawnStar } from '../ui/Sky';
-import { IconHome, IconChevronLeft, IconChevronRight, IconVolume, IconPlay, IconRotate, IconMaximize, IconCheck, IconRefresh } from '../ui/icons';
+import { IconHome, IconChevronLeft, IconChevronRight, IconVolume, IconPlay, IconRotate, IconMaximize, IconCheck, IconRefresh, IconStar, IconPrint } from '../ui/icons';
 
 type Assist = { a: Instructions; type: 'instructions' | 'feedback'; always: boolean };
 
@@ -34,11 +37,20 @@ export default function PlayView({ unitId, jump, session, progress, onReported }
   const [idx, setIdx] = useState(0);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState('');
+  // איכות הטובה ביותר לכל שקף ביחידה (index → 0..1) — מתעדכן תוך כדי משחק
+  const [qMap, setQMap] = useState<Record<number, number>>({});
+  const begun = useRef(false); // התחלה (וספירת כניסה) פעם אחת בלבד
 
   useEffect(() => {
     setUnit(null); setStarted(false); setDone(false);
     Promise.all([loadUnit(unitId), loadThemes(), loadCatalog()])
-      .then(([u, , cat]) => { setUnit(u); setCatalog(cat); })
+      .then(([u, , cat]) => {
+        const q: Record<number, number> = {};
+        u.slides.forEach((_, i) => { const v = progress.slides[`${u.id}:${i}`]?.q; if (v) q[i] = v; });
+        setQMap(q);
+        setUnit(u);
+        setCatalog(cat);
+      })
       .catch(() => setErr('לא הצלחנו לטעון את התחנה — בדקו את החיבור'));
     return () => stopVoice();
   }, [unitId]);
@@ -51,13 +63,16 @@ export default function PlayView({ unitId, jump, session, progress, onReported }
 
   if (done) {
     const nextUnit = catalog.find((u) => u.n === unit.n + 1);
-    return <UnitDone unit={unit} nextUnit={nextUnit} />;
+    return <UnitDone unit={unit} nextUnit={nextUnit} qMap={qMap} />;
   }
 
   if (!started) {
     const begin = () => {
+      if (begun.current) return;
+      begun.current = true;
       try { new Audio().play().catch(() => {}); } catch { /* */ }
       preloadAudio(collectAudio(unit, resumeAt));
+      reportVisit(session, unit.id);
       setIdx(resumeAt);
       setStarted(true);
     };
@@ -76,7 +91,8 @@ export default function PlayView({ unitId, jump, session, progress, onReported }
 
   return (
     <UnitPlayer
-      unit={unit} session={session} startIdx={idx}
+      unit={unit} session={session} startIdx={idx} qMap={qMap}
+      onQuality={(i, q) => setQMap((m) => (q > (m[i] ?? 0) ? { ...m, [i]: q } : m))}
       onExit={() => { onReported(); nav('/map'); }}
       onComplete={() => { onReported(); setDone(true); }}
     />
@@ -90,8 +106,10 @@ function collectAudio(unit: UnitContent, from: number): string[] {
 
 // ── נגן: שקף אחרי שקף ──
 
-function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
-  unit: UnitContent; session: StudentSession; startIdx: number; onExit: () => void; onComplete: () => void;
+function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComplete }: {
+  unit: UnitContent; session: StudentSession; startIdx: number;
+  qMap: Record<number, number>; onQuality: (slide: number, q: number) => void;
+  onExit: () => void; onComplete: () => void;
 }) {
   const [idx, setIdx] = useState(startIdx);
   const [active, setActive] = useState(false);
@@ -99,7 +117,8 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
   const [speaking, setSpeaking] = useState(false);
   const total = unit.slides.length;
   const slide = unit.slides[idx];
-  const stats = useRef({ correct: 0, wrong: 0, skills: {} as Record<string, SkillStat>, t0: Date.now(), finished: false, touched: false });
+  const kinds = useMemo(() => unit.slides.map((s) => s.kind), [unit]);
+  const stats = useRef({ correct: 0, wrong: 0, skills: {} as Record<string, SkillStat>, t0: Date.now(), finished: false, touched: false, quality: 0 });
   const finishing = useRef(false);
 
   useEffect(() => onVoiceState(setSpeaking), []);
@@ -108,15 +127,14 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
 
   // תחילת שקף: הוראות (חלון אם יש טקסט / חובה, אחרת שמע בלבד) ← משחק
   useEffect(() => {
-    stats.current = { correct: 0, wrong: 0, skills: {}, t0: Date.now(), finished: false, touched: false };
+    stats.current = { correct: 0, wrong: 0, skills: {}, t0: Date.now(), finished: false, touched: false, quality: 0 };
     finishing.current = false;
     setActive(false);
     preloadAudio(collectAudio(unit, idx + 1));
     reportPosition(session, unit.id, idx, total).catch(() => {});
-    const always = slide.kind === 'findAnswer';
-    if (hasContent(instructions) || always) {
-      const a: Instructions = hasContent(instructions) ? instructions : { text: '1, 2, 3 Go!', audio: null };
-      openAssist({ a, type: 'instructions', always });
+    // בלי "1, 2, 3 Go!" של Jigzi — שקף בלי הוראות מתחיל מיד
+    if (hasContent(instructions)) {
+      openAssist({ a: instructions, type: 'instructions', always: false });
     } else {
       setActive(true);
     }
@@ -144,15 +162,21 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
 
   const sendResult = (finished: boolean, nextIdx: number) => {
     const s = stats.current;
-    if (!SCORED_KINDS.has(slide.kind) || (!s.touched && !finished)) return;
+    const starKind = STAR_KINDS.has(slide.kind);
+    if (!(SCORED_KINDS.has(slide.kind) || starKind) || (!s.touched && !finished && s.quality <= 0)) return;
+    // כוכבי התחנה אחרי השקף הזה (לפי הטוב ביותר בכל שקף)
+    const merged = { ...qMap, [idx]: Math.max(qMap[idx] ?? 0, s.quality) };
+    const slidesView = Object.fromEntries(Object.entries(merged).map(([i, q]) => [`${unit.id}:${i}`, { c: 0, w: 0, n: 1, q }]));
+    const stars = starsFor(unitQuality(unit.id, kinds, slidesView));
+    if (starKind) onQuality(idx, s.quality);
     reportResult(session, {
       unitId: unit.id, slide: idx, kind: slide.kind,
       correct: s.correct, wrong: s.wrong, seconds: Math.round((Date.now() - s.t0) / 1000),
-      skills: s.skills, next: nextIdx, total,
+      skills: s.skills, next: nextIdx, total, quality: Math.round(s.quality * 100) / 100, stars,
     }).catch(() => {});
   };
 
-  const goNext = useCallback((finished = false) => {
+  const goNext = (finished = false) => {
     assistRef.current = null;
     stopVoice();
     setAssist(null); // מעבר לא נתקע בגלל חלון הוראות פתוח
@@ -163,7 +187,7 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
     } else {
       setIdx(idx + 1);
     }
-  }, [idx, total]);
+  };
 
   const goPrev = () => {
     if (idx === 0) return;
@@ -193,6 +217,9 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
         s.skills[k] = ok ? { ...cur, c: cur.c + 1 } : { ...cur, w: cur.w + 1 };
       }
     },
+    progress: (q) => {
+      stats.current.quality = Math.max(stats.current.quality, Math.min(1, Math.max(0, q)));
+    },
   };
 
   const fullscreen = () => {
@@ -217,7 +244,7 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
           <div style={{ width: `${((idx + 1) / total) * 100}%` }} />
         </div>
         <SlideCounter
-          idx={idx} total={total} kinds={unit.slides.map((s) => s.kind)}
+          idx={idx} total={total} kinds={kinds} qMap={qMap}
           easy={session.token === 'teacher-preview'}
           onJump={(to) => {
             if (to === idx) return;
@@ -230,7 +257,7 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
         />
         {hasContent(instructions) && (
           <button className={`icon-btn${speaking ? ' speaking' : ''}`} aria-label="שמיעת ההוראות שוב" title="שמיעת ההוראות שוב"
-            onClick={() => openAssist({ a: instructions, type: 'instructions', always: slide.kind === 'findAnswer' })}>
+            onClick={() => openAssist({ a: instructions, type: 'instructions', always: false })}>
             <IconVolume size={20} />
           </button>
         )}
@@ -249,7 +276,7 @@ function UnitPlayer({ unit, session, startIdx, onExit, onComplete }: {
           <div className="assist-backdrop" onClick={(e) => { if (e.target === e.currentTarget) closeAssist(assist); }}>
             {(assist.a.text || assist.always) && (
               <div className="assist-bubble pop-in" dir="auto">
-                <p>{assist.a.text || '1, 2, 3 Go!'}</p>
+                <p>{assist.a.text}</p>
                 <div className="assist-actions">
                   {assist.a.audio && (
                     <button className="btn secondary small" onClick={() => playVoice(assist.a.audio!.id)}><IconRefresh size={15} /> שוב</button>
@@ -278,8 +305,8 @@ const KIND_NAME: Record<string, string> = {
 };
 
 /** מונה השקפים — לחיצה ארוכה פותחת תפריט מעבר לשקף (לא זמין בלחיצה סתמית) */
-function SlideCounter({ idx, total, kinds, easy, onJump }: {
-  idx: number; total: number; kinds: string[]; easy: boolean; onJump: (i: number) => void;
+function SlideCounter({ idx, total, kinds, qMap, easy, onJump }: {
+  idx: number; total: number; kinds: string[]; qMap: Record<number, number>; easy: boolean; onJump: (i: number) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [pressing, setPressing] = useState(false);
@@ -309,13 +336,22 @@ function SlideCounter({ idx, total, kinds, easy, onJump }: {
           <div className="slide-menu pop-in" onClick={(e) => e.stopPropagation()}>
             <h3>לאיזה שקף לעבור?</h3>
             <div className="slide-menu-grid">
-              {kinds.map((k, i) => (
-                <button key={i} className={`slide-chip${i === idx ? ' cur' : ''}`} onClick={() => { setOpen(false); onJump(i); }}>
-                  <b>{i + 1}</b>
-                  <span>{KIND_NAME[k] ?? k}</span>
-                </button>
-              ))}
+              {kinds.map((k, i) => {
+                const q = qMap[i] ?? 0;
+                const state = !STAR_KINDS.has(k) ? '' : q >= 0.95 ? ' full' : q > 0 ? ' part' : ' none';
+                return (
+                  <button key={i} className={`slide-chip${i === idx ? ' cur' : ''}${state}`} onClick={() => { setOpen(false); onJump(i); }}>
+                    <b>{i + 1}</b>
+                    <span>{KIND_NAME[k] ?? k}</span>
+                    {state === ' full' && <i className="chip-mark"><IconStar size={13} filled /></i>}
+                    {state === ' part' && <i className="chip-mark part"><IconStar size={13} /></i>}
+                  </button>
+                );
+              })}
             </div>
+            <p className="slide-menu-legend">
+              <IconStar size={13} filled /> בוצע מושלם · <IconStar size={13} /> אפשר לשפר
+            </p>
           </div>
         </div>
       )}
@@ -342,28 +378,51 @@ export function SlideBody({ kind, c }: { kind: string; c: any }) {
 
 // ── סיום תחנה ──
 
-function UnitDone({ unit, nextUnit }: { unit: UnitContent; nextUnit?: UnitMeta }) {
+function UnitDone({ unit, nextUnit, qMap }: { unit: UnitContent; nextUnit?: UnitMeta; qMap: Record<number, number> }) {
+  const kinds = unit.slides.map((s) => s.kind);
+  const view = Object.fromEntries(Object.entries(qMap).map(([i, q]) => [`${unit.id}:${i}`, { c: 0, w: 0, n: 1, q }]));
+  const stars = starsFor(unitQuality(unit.id, kinds, view));
+  const weak = weakSlides(unit.id, kinds, view);
   useEffect(() => {
     playWin();
-    confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 }, colors: ['#f5b82e', '#ffe08a', '#8ea2ff', '#ffffff'] });
+    if (stars >= 4) confetti({ particleCount: stars === 5 ? 180 : 100, spread: 80, origin: { y: 0.6 }, colors: ['#f5b82e', '#ffe08a', '#8ea2ff', '#ffffff'] });
   }, []);
+  const msg = stars === 5 ? 'מושלם! כל הכוכבים שלכם'
+    : stars === 4 ? 'כמעט מושלם! רוצים לנסות להגיע ל-5?'
+    : 'יפה מאוד! אפשר להשיג עוד כוכבים — נסו שוב את השקפים שסימנו';
+  const page = BOOKLET_PAGE[unit.n];
+  const tpage = TEXTS_PAGE[unit.n];
   return (
     <div className="night-sky">
       <SkyStars seed={unit.n + 40} />
       <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-        <div className="card pop-in" style={{ textAlign: 'center', color: 'var(--ink)', maxWidth: 420, width: '100%' }}>
-          <DrawnStar size={96} />
-          <h2 style={{ fontSize: 28, margin: '6px 0' }}>כל הכבוד!</h2>
-          <p style={{ color: 'var(--ink-soft)', margin: '0 0 18px' }}>
-            סיימתם את תחנה {unit.n} — <span dir="ltr" style={{ fontFamily: "'Fredoka One', sans-serif" }}>{unit.title}</span>
-          </p>
+        <div className="card pop-in" style={{ textAlign: 'center', color: 'var(--ink)', maxWidth: 460, width: '100%' }}>
+          <div style={{ fontSize: 15, color: 'var(--ink-soft)', fontWeight: 700 }}>
+            תחנה {unit.n} · <span dir="ltr" style={{ fontFamily: "'Fredoka One', sans-serif" }}>{unit.title}</span>
+          </div>
+          <StarRow stars={stars} size={46} animate />
+          <h2 style={{ fontSize: 24, margin: '4px 0 16px' }}>{msg}</h2>
+          {unit.n === 18 && <p style={{ color: 'var(--ink-soft)', marginTop: -6 }}>{FINALE}</p>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+            {weak.length > 0 && stars < 5 && (
+              <button className={`btn ${stars >= 4 ? 'secondary' : 'star'}`} style={{ minWidth: 240 }} onClick={() => nav(`/unit/${unit.id}/${weak[0] + 1}`)}>
+                <IconRefresh size={16} /> לשפר — מתחילים בשקף {weak[0] + 1}
+              </button>
+            )}
             {nextUnit && (
-              <button className="btn star" style={{ minWidth: 240 }} onClick={() => nav(`/unit/${nextUnit.id}`)}>
+              <button className={`btn ${stars >= 4 || weak.length === 0 ? 'star' : 'secondary'}`} style={{ minWidth: 240 }} onClick={() => nav(`/unit/${nextUnit.id}`)}>
                 <IconPlay size={17} /> לתחנה {nextUnit.n}: <span dir="ltr">{nextUnit.title}</span>
               </button>
             )}
-            <button className="btn secondary" onClick={() => nav('/map')}><IconHome size={17} /> למפת הכוכבים</button>
+            <button className="pill" onClick={() => nav('/map')}><IconHome size={15} /> למפת הכוכבים</button>
+          </div>
+          <div className="booklet-links">
+            <a className="pill" href={pdfPage(BOOKLET_PDF, page)} target="_blank" rel="noopener noreferrer">
+              <IconPrint size={15} /> דף הכתיבה בחוברת (עמוד {page})
+            </a>
+            <a className="pill" href={pdfPage(TEXTS_PDF, tpage)} target="_blank" rel="noopener noreferrer">
+              <IconPrint size={15} /> הטקסטים של התחנה (עמוד {tpage})
+            </a>
           </div>
         </div>
       </main>

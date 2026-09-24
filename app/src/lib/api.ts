@@ -14,12 +14,14 @@ export interface StudentSession {
   freeNav?: boolean;   // true: כל היחידות פתוחות
 }
 
-export interface Position { slide: number; furthest: number; completed: boolean; at?: string }
+export interface Position { slide: number; furthest: number; completed: boolean; stars?: number; visits?: number; at?: string }
 export interface SkillStat { c: number; w: number }
+/** ניסיון ראשון (c,w), מספר ניסיונות (n), איכות הביצוע הטובה ביותר 0–1 (q) */
+export interface SlideStat { c: number; w: number; n: number; q?: number }
 
 export interface ProgressData {
   positions: Record<string, Position>;                         // לפי unit id
-  slides: Record<string, { c: number; w: number; n: number }>;  // "u3:5" → ניסיון ראשון + מספר ניסיונות
+  slides: Record<string, SlideStat>;                           // "u3:5"
   skills: Record<string, SkillStat>;
   freeNav?: boolean;
 }
@@ -36,6 +38,8 @@ export interface SlideResult {
   skills: Record<string, SkillStat>;
   next: number;   // השקף שממנו ממשיכים
   total: number;  // מספר השקפים ביחידה
+  quality: number; // איכות הביצוע בשקף 0–1
+  stars: number;   // כוכבי התחנה אחרי הדיווח (0–5)
 }
 
 const LS_SESSION = 'wilk_session';
@@ -120,6 +124,7 @@ function applyPosition(p: ProgressData, unitId: string, slide: number, total: nu
   const prev = p.positions[unitId] ?? { slide: 0, furthest: 0, completed: false };
   const done = total > 0 && slide >= total;
   p.positions[unitId] = {
+    ...prev,
     slide: done ? 0 : Math.max(0, slide),
     furthest: Math.max(prev.furthest, slide),
     completed: prev.completed || done,
@@ -141,12 +146,32 @@ export async function reportResult(s: StudentSession, r: SlideResult): Promise<v
     }
     const key = `${r.unitId}:${r.slide}`;
     const prev = p.slides[key];
-    p.slides[key] = prev ? { ...prev, n: prev.n + 1 } : { c: r.correct, w: r.wrong, n: 1 };
+    p.slides[key] = prev
+      ? { ...prev, n: prev.n + 1, q: Math.max(prev.q ?? 0, r.quality) }
+      : { c: r.correct, w: r.wrong, n: 1, q: r.quality };
     applyPosition(p, r.unitId, r.next, r.total);
+    const pos = p.positions[r.unitId];
+    pos.stars = Math.max(pos.stars ?? 0, r.stars);
     saveGuest(s, p);
     return;
   }
   await request('student.php?a=result', r, s.token);
+}
+
+/** כניסה לתחנה — נספרת לתלמיד (מקומית או בשרת) ובמונה הכללי של האתר */
+export async function reportVisit(s: StudentSession, unitId: string): Promise<void> {
+  if (isLocalSession(s)) {
+    const p = loadGuest(s);
+    const prev = p.positions[unitId] ?? { slide: 0, furthest: 0, completed: false };
+    p.positions[unitId] = { ...prev, visits: (prev.visits ?? 0) + 1, at: new Date().toISOString() };
+    saveGuest(s, p);
+    if (s.token === 'teacher-preview') return; // תצוגת מורה לא נספרת באתר
+  }
+  await request('student.php?a=visit', { unitId }, isLocalSession(s) ? undefined : s.token).catch(() => {});
+}
+
+export async function fetchPlays(): Promise<Record<string, number>> {
+  try { return (await request<{ plays: Record<string, number> }>('student.php?a=plays')).plays; } catch { return {}; }
 }
 
 export async function reportPosition(s: StudentSession, unitId: string, slide: number, total: number): Promise<void> {

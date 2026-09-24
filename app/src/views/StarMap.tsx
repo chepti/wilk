@@ -6,6 +6,9 @@ import SkyStars from '../ui/Sky';
 import Footer from '../ui/Footer';
 import { IconLogOut, IconPlay, IconLock, IconCheck } from '../ui/icons';
 import { avatarName } from '../data/avatars';
+import { starsFor, unitQuality } from '../data/stars';
+import StarRow from '../ui/StarRow';
+import { IconHeart } from '../ui/icons';
 
 /** מצב יחידה לתצוגה */
 function unitState(u: UnitMeta, p: ProgressData, unlocked: boolean) {
@@ -48,6 +51,10 @@ export default function StarMap({ session, progress, onLogout }: {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button className="pill tip-host" onClick={() => nav('/parents')} style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', borderColor: 'rgba(255,255,255,0.35)' }}>
+            <IconHeart size={14} /> להורים ולמורים
+            <span className="tip">דוח התקדמות, החוברת להדפסה ועזרים</span>
+          </button>
           <span className="pill" style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', borderColor: 'rgba(255,255,255,0.35)' }}>
             {doneCount} / {units.length || 18} תחנות
           </span>
@@ -120,14 +127,21 @@ function Constellation({ units, progress, unlocked, current }: {
       </svg>
       {units.map((u, i) => {
         const st = unitState(u, progress, unlocked(i));
-        return <StarNode key={u.id} u={u} st={st} x={pts[i].x} y={pts[i].y} isCurrent={u.id === current} />;
+        const touched = !!progress.positions[u.id];
+        const stars = touched ? unitStars(u, progress) : null;
+        return <StarNode key={u.id} u={u} st={st} stars={stars} x={pts[i].x} y={pts[i].y} isCurrent={u.id === current} />;
       })}
     </div>
   );
 }
 
-function StarNode({ u, st, x, y, isCurrent }: {
-  u: UnitMeta; st: ReturnType<typeof unitState>; x: number; y: number; isCurrent: boolean;
+/** כוכבי תחנה: הטוב מבין השמור בשרת לבין החישוב מהשקפים */
+export function unitStars(u: UnitMeta, p: ProgressData): number {
+  return Math.max(p.positions[u.id]?.stars ?? 0, starsFor(unitQuality(u.id, u.kinds, p.slides)));
+}
+
+function StarNode({ u, st, stars, x, y, isCurrent }: {
+  u: UnitMeta; st: ReturnType<typeof unitState>; stars: number | null; x: number; y: number; isCurrent: boolean;
 }) {
   const locked = st.kind === 'locked';
   const size = 74;
@@ -140,7 +154,7 @@ function StarNode({ u, st, x, y, isCurrent }: {
       disabled={locked}
       onClick={() => nav(`/unit/${u.id}`)}
       style={{
-        position: 'absolute', left: x - size / 2, top: y - size / 2, width: size, height: size + 26,
+        position: 'absolute', left: x - size / 2, top: y - size / 2, width: size, height: size + 44,
         background: 'none', border: 'none', padding: 0, color: '#fff', cursor: locked ? 'default' : 'pointer',
       }}
       aria-label={`תחנה ${u.n}: ${u.title}`}
@@ -162,6 +176,7 @@ function StarNode({ u, st, x, y, isCurrent }: {
       <span dir="ltr" style={{ display: 'block', fontFamily: "'Fredoka One', sans-serif", fontSize: 17, marginTop: -2, opacity: locked ? 0.5 : 1, whiteSpace: 'nowrap' }}>
         {u.title}
       </span>
+      {stars !== null && <span style={{ display: 'block', marginTop: 3 }}><StarRow stars={stars} size={12} light /></span>}
       {locked && <span style={{ position: 'absolute', top: 2, left: 2, opacity: 0.8 }}><IconLock size={14} /></span>}
       {st.kind === 'done' && <span style={{ position: 'absolute', top: 0, left: 0, background: '#16a34a', borderRadius: 999, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconCheck size={13} strokeWidth={3} /></span>}
       <span className="tip">

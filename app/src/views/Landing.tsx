@@ -2,7 +2,7 @@ import React from 'react';
 import { nav } from '../App';
 import SkyStars, { DrawnStar } from '../ui/Sky';
 import Footer from '../ui/Footer';
-import { IconUsers, IconPlay, IconBook } from '../ui/icons';
+import { IconUsers, IconPlay, IconBook, IconHeart } from '../ui/icons';
 
 export default function Landing() {
   return (
@@ -22,9 +22,14 @@ export default function Landing() {
             <button className="btn ghost" style={{ minWidth: 260 }} onClick={() => nav('/join/guest')}>
               <IconPlay size={18} /> לשחק בלי כיתה
             </button>
-            <button className="btn ghost small" style={{ marginTop: 10 }} onClick={() => nav('/teacher')}>
-              <IconBook size={16} /> כניסת מורים
-            </button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button className="btn ghost small" onClick={() => nav('/teacher')}>
+                <IconBook size={16} /> כניסת מורים
+              </button>
+              <button className="btn ghost small" onClick={() => nav('/parents')}>
+                <IconHeart size={16} /> להורים · החוברת והעזרים
+              </button>
+            </div>
           </div>
         </div>
       </main>

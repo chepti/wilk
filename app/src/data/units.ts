@@ -12,6 +12,7 @@ export interface UnitMeta {
   skills: string[];
   slides: number;
   kinds: string[];
+  jigziPlays?: number;
 }
 
 let catalog: Promise<UnitMeta[]> | null = null;

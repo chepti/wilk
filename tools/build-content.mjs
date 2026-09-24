@@ -23,6 +23,11 @@ const SKILLS = {
   13: ['x', 'can'], 14: ['j', 'z'], 15: ['u'], 16: ['q', 'qu'], 17: ['y'], 18: ['w', 'ow'],
 };
 
+// שקפים שנשארו ב-Jigzi בטעות מפעילות אחרת (מספרי שקף, מ-1) — לא נכנסים לאפליקציה
+const EXCLUDE = {
+  4: [18, 19], // זיכרון HAPPY/SAD ושאלות על ט' באב — אחרי שקף הסיום
+};
+
 const strip = (o) => {
   if (Array.isArray(o)) return o.map(strip);
   if (o && typeof o === 'object') {
@@ -56,7 +61,7 @@ for (const f of jigFiles) {
   const jig = JSON.parse(fs.readFileSync(path.join(JSON_DIR, f), 'utf8'));
   const name = jig.jigData.displayName;
   const n = +(/#\s*(\d+)/.exec(name)?.[1] ?? 0);
-  const slides = jig.jigData.modules.map((m) => {
+  const slides = jig.jigData.modules.filter((_, i) => !(EXCLUDE[n] ?? []).includes(i + 1)).map((m) => {
     const body = JSON.parse(fs.readFileSync(path.join(JSON_DIR, `${jig.id}_${m.id}.json`), 'utf8')).module.body;
     const kind = Object.keys(body)[0];
     return { kind, content: strip(body[kind].content) };
@@ -125,6 +130,7 @@ for (const u of units) {
 const catalog = units.map((u) => ({
   id: u.id, n: u.n, title: u.title, skills: u.skills, slides: u.slides.length,
   kinds: u.slides.map((s) => s.kind),
+  jigziPlays: u.plays, // כניסות בזמן Jigzi (2023–2026)
 }));
 fs.writeFileSync(path.join(OUT_CONTENT, 'units.json'), JSON.stringify(catalog));
 fs.writeFileSync(path.join(ROOT, 'api', 'units.json'), JSON.stringify(catalog.map(({ kinds, ...c }) => c), null, 1));

@@ -11,6 +11,8 @@ export interface PlayApi {
   finish: () => void;
   /** אירוע מדיד: הצלחה / טעות, עם טקסט (מילה/אות) לשיוך לצליל */
   record: (ok: boolean, text?: string | null) => void;
+  /** איכות הביצוע עד עכשיו בשקף (0–1) — לכוכבים. נשלחת כשיוצאים מהשקף */
+  progress: (quality: number) => void;
 }
 
 export const PlayCtx = createContext<PlayApi | null>(null);

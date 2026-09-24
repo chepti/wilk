@@ -7,7 +7,8 @@
    "c",
    "a"
   ],
-  "slides": 8
+  "slides": 8,
+  "jigziPlays": 6730
  },
  {
   "id": "u2",
@@ -17,7 +18,8 @@
    "t",
    "s"
   ],
-  "slides": 12
+  "slides": 12,
+  "jigziPlays": 4257
  },
  {
   "id": "u3",
@@ -27,7 +29,8 @@
    "h",
    "r"
   ],
-  "slides": 15
+  "slides": 15,
+  "jigziPlays": 3322
  },
  {
   "id": "u4",
@@ -37,7 +40,8 @@
    "f",
    "m"
   ],
-  "slides": 19
+  "slides": 17,
+  "jigziPlays": 2441
  },
  {
   "id": "u5",
@@ -46,7 +50,8 @@
   "skills": [
    "n"
   ],
-  "slides": 15
+  "slides": 15,
+  "jigziPlays": 1890
  },
  {
   "id": "u6",
@@ -57,7 +62,8 @@
    "p",
    "on"
   ],
-  "slides": 18
+  "slides": 18,
+  "jigziPlays": 1506
  },
  {
   "id": "u7",
@@ -66,7 +72,8 @@
   "skills": [
    "e"
   ],
-  "slides": 12
+  "slides": 12,
+  "jigziPlays": 1054
  },
  {
   "id": "u8",
@@ -76,7 +83,8 @@
    "k",
    "l"
   ],
-  "slides": 14
+  "slides": 14,
+  "jigziPlays": 937
  },
  {
   "id": "u9",
@@ -86,7 +94,8 @@
    "b",
    "ck"
   ],
-  "slides": 10
+  "slides": 10,
+  "jigziPlays": 763
  },
  {
   "id": "u10",
@@ -96,7 +105,8 @@
    "g",
    "d"
   ],
-  "slides": 17
+  "slides": 17,
+  "jigziPlays": 732
  },
  {
   "id": "u11",
@@ -106,7 +116,8 @@
    "i",
    "in"
   ],
-  "slides": 9
+  "slides": 9,
+  "jigziPlays": 512
  },
  {
   "id": "u12",
@@ -116,7 +127,8 @@
    "v",
    "and"
   ],
-  "slides": 10
+  "slides": 10,
+  "jigziPlays": 488
  },
  {
   "id": "u13",
@@ -126,7 +138,8 @@
    "x",
    "can"
   ],
-  "slides": 10
+  "slides": 10,
+  "jigziPlays": 410
  },
  {
   "id": "u14",
@@ -136,7 +149,8 @@
    "j",
    "z"
   ],
-  "slides": 14
+  "slides": 14,
+  "jigziPlays": 459
  },
  {
   "id": "u15",
@@ -145,7 +159,8 @@
   "skills": [
    "u"
   ],
-  "slides": 12
+  "slides": 12,
+  "jigziPlays": 396
  },
  {
   "id": "u16",
@@ -155,7 +170,8 @@
    "q",
    "qu"
   ],
-  "slides": 8
+  "slides": 8,
+  "jigziPlays": 365
  },
  {
   "id": "u17",
@@ -164,7 +180,8 @@
   "skills": [
    "y"
   ],
-  "slides": 7
+  "slides": 7,
+  "jigziPlays": 373
  },
  {
   "id": "u18",
@@ -174,6 +191,7 @@
    "w",
    "ow"
   ],
-  "slides": 12
+  "slides": 12,
+  "jigziPlays": 737
  }
 ]

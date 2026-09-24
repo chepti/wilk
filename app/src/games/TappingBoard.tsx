@@ -40,6 +40,7 @@ export default function TappingBoard({ c }: { c: TappingBoardContent }) {
     const my = ++token.current;
     stopVoice();
     selected.current.add(i); // חשיפה, לא מבחן — לא נרשם כשליטה
+    play.progress(selected.current.size / c.traces.length); // כוכבים: צריך ללחוץ על כל הפריטים
     setCurrent(i);
     if (!t.audio && !t.text) return; // נשאר מסומן עד ההקשה הבאה
     if (t.text) setBubble({ i, text: t.text, key: my });

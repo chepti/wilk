@@ -7,6 +7,10 @@ import path from 'node:path';
 import { SlideBody } from '../app/src/views/PlayView';
 import { PlayCtx, type PlayApi } from '../app/src/engine/play';
 
+// useLayoutEffect לא רץ ב-SSR — אזהרה צפויה, לא רלוונטית לבדיקה
+const origError = console.error;
+console.error = (...a: unknown[]) => { if (String(a[0]).includes('useLayoutEffect')) return; origError(...a); };
+
 const ROOT = process.cwd();
 const CONTENT = path.join(ROOT, 'app', 'public', 'content');
 const MEDIA = path.join(ROOT, 'app', 'public', 'media');

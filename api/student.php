@@ -51,10 +51,11 @@ case 'result': {
     $slide = (int)($b['slide'] ?? -1);
     if ($unit === '' || $slide < 0) json_err('דיווח לא תקין');
     $clamp = fn($v) => max(0, min(500, (int)$v));
+    $quality = isset($b['quality']) ? max(0.0, min(1.0, (float)$b['quality'])) : null;
     $db = db();
-    $db->prepare('INSERT INTO slide_results (student_id, unit_id, slide, kind, correct, wrong, seconds) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    $db->prepare('INSERT INTO slide_results (student_id, unit_id, slide, kind, correct, wrong, seconds, quality) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
        ->execute([$sid, $unit, $slide, substr((string)($b['kind'] ?? ''), 0, 20),
-                  $clamp($b['correct'] ?? 0), $clamp($b['wrong'] ?? 0), max(0, min(3600, (int)($b['seconds'] ?? 0)))]);
+                  $clamp($b['correct'] ?? 0), $clamp($b['wrong'] ?? 0), max(0, min(3600, (int)($b['seconds'] ?? 0))), $quality]);
 
     $skills = $b['skills'] ?? [];
     if (is_array($skills)) {
@@ -73,8 +74,39 @@ case 'result': {
         }
     }
     save_position($sid, $unit, (int)($b['next'] ?? $slide + 1), (int)($b['total'] ?? 0));
+    if (isset($b['stars'])) {
+        // שומרים את התוצאה הטובה ביותר — שיפור מעלה, ניסיון חלש לא מוריד
+        // CAST — PDO קושר כמחרוזת, ובהשוואה של SQLite מחרוזת תמיד "גדולה" ממספר
+        $db->prepare('UPDATE positions SET stars = MAX(stars, CAST(? AS INTEGER)) WHERE student_id = ? AND unit_id = ?')
+           ->execute([max(0, min(5, (int)$b['stars'])), $sid, $unit]);
+    }
     touch_student($sid);
     json_out(['ok' => true]);
+}
+
+// כניסה לתחנה: מונה אנונימי לכל האתר, ולתלמיד מחובר — גם אצלו
+case 'visit': {
+    $b = body();
+    $unit = substr((string)($b['unitId'] ?? ''), 0, 20);
+    if (!preg_match('/^u\d{1,3}$/', $unit)) json_err('תחנה לא תקינה');
+    $db = db();
+    $db->prepare("INSERT INTO unit_plays (unit_id, day, n) VALUES (?, date('now'), 1)
+        ON CONFLICT(unit_id, day) DO UPDATE SET n = n + 1")->execute([$unit]);
+    $sid = parse_token(bearer(), 's');
+    if ($sid !== null) {
+        $db->prepare("INSERT INTO positions (student_id, unit_id, visits, updated_at) VALUES (?, ?, 1, datetime('now'))
+            ON CONFLICT(student_id, unit_id) DO UPDATE SET visits = visits + 1")->execute([$sid, $unit]);
+        touch_student($sid);
+    }
+    json_out(['ok' => true]);
+}
+
+// סה"כ כניסות לכל תחנה (ציבורי)
+case 'plays': {
+    $rows = db()->query('SELECT unit_id, SUM(n) AS n FROM unit_plays GROUP BY unit_id')->fetchAll(PDO::FETCH_ASSOC);
+    $out = [];
+    foreach ($rows as $r) $out[$r['unit_id']] = (int)$r['n'];
+    json_out(['plays' => $out ?: new stdClass()]);
 }
 
 // שמירת מיקום בלבד (מעבר לשקף בלי ניקוד — סרטון, שער)

@@ -109,6 +109,13 @@ function db(): PDO {
         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         PRIMARY KEY (student_id, unit_id)
     )");
+    // כניסות אנונימיות לכל תחנה (כל האתר, גם בלי כיתה) — ליום
+    $pdo->exec("CREATE TABLE IF NOT EXISTS unit_plays (
+        unit_id TEXT NOT NULL,
+        day TEXT NOT NULL,
+        n INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (unit_id, day)
+    )");
     // שליטה לפי אות / צליל (c, a, ck, qu...)
     $pdo->exec("CREATE TABLE IF NOT EXISTS skill_stats (
         student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -118,7 +125,36 @@ function db(): PDO {
         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         PRIMARY KEY (student_id, skill)
     )");
+    // הגירות לעמודות שנוספו אחרי ההשקה הראשונה
+    add_column($pdo, 'slide_results', 'quality', 'REAL');
+    add_column($pdo, 'positions', 'stars', 'INTEGER NOT NULL DEFAULT 0');
+    add_column($pdo, 'positions', 'visits', 'INTEGER NOT NULL DEFAULT 0');
+    daily_backup($pdo);
     return $pdo;
+}
+
+/** גיבוי יומי אוטומטי: הבקשה הראשונה בכל יום מעתיקה את ה-DB ל-backups/ (נשמרים 30 ימים) */
+function daily_backup(PDO $pdo): void {
+    $dir = data_dir() . '/backups';
+    $file = $dir . '/wilk-' . gmdate('Y-m-d') . '.db';
+    if (file_exists($file)) return;
+    if (!is_dir($dir)) @mkdir($dir, 0700, true);
+    try {
+        $pdo->exec('PRAGMA wal_checkpoint(TRUNCATE)'); // כל השינויים בקובץ הראשי לפני ההעתקה
+        @copy(data_dir() . '/wilk.db', $file . '.tmp') && @rename($file . '.tmp', $file);
+        $all = glob($dir . '/wilk-*.db') ?: [];
+        sort($all);
+        foreach (array_slice($all, 0, max(0, count($all) - 30)) as $old) @unlink($old);
+    } catch (Throwable $e) {
+        // גיבוי שנכשל לא מפיל את האתר
+    }
+}
+
+function add_column(PDO $pdo, string $table, string $col, string $type): void {
+    foreach ($pdo->query("PRAGMA table_info($table)")->fetchAll(PDO::FETCH_ASSOC) as $c) {
+        if ($c['name'] === $col) return;
+    }
+    $pdo->exec("ALTER TABLE $table ADD COLUMN $col $type");
 }
 
 function secret(): string {
@@ -183,22 +219,24 @@ function touch_student(int $sid): void {
 function student_progress(int $sid): array {
     $db = db();
     $pos = [];
-    $st = $db->prepare('SELECT unit_id, slide, furthest, completed, updated_at FROM positions WHERE student_id = ?');
+    $st = $db->prepare('SELECT unit_id, slide, furthest, completed, stars, visits, updated_at FROM positions WHERE student_id = ?');
     $st->execute([$sid]);
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
         $pos[$r['unit_id']] = [
             'slide' => (int)$r['slide'], 'furthest' => (int)$r['furthest'],
-            'completed' => (bool)$r['completed'], 'at' => $r['updated_at'],
+            'completed' => (bool)$r['completed'], 'stars' => (int)$r['stars'], 'visits' => (int)$r['visits'],
+            'at' => $r['updated_at'],
         ];
     }
-    // לכל שקף: האם נפתר, והניסיון הראשון (הכי מלמד על שליטה)
+    // לכל שקף: הניסיון הראשון (c,w — מלמד על שליטה), מספר ניסיונות, ואיכות הביצוע הטובה ביותר (q — לכוכבים)
     $slides = [];
-    $st = $db->prepare('SELECT unit_id, slide, correct, wrong FROM slide_results WHERE student_id = ? ORDER BY id');
+    $st = $db->prepare('SELECT unit_id, slide, correct, wrong, quality FROM slide_results WHERE student_id = ? ORDER BY id');
     $st->execute([$sid]);
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
         $k = $r['unit_id'] . ':' . $r['slide'];
         if (!isset($slides[$k])) $slides[$k] = ['c' => (int)$r['correct'], 'w' => (int)$r['wrong'], 'n' => 0];
         $slides[$k]['n']++;
+        if ($r['quality'] !== null) $slides[$k]['q'] = max($slides[$k]['q'] ?? 0, round((float)$r['quality'], 2));
     }
     $skills = [];
     $st = $db->prepare('SELECT skill, correct, wrong FROM skill_stats WHERE student_id = ?');

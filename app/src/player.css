@@ -26,6 +26,18 @@
 .slide-chip span { font-size: 12px; color: var(--ink-soft); }
 .slide-chip:hover { border-color: var(--sky); background: var(--sky-soft); }
 .slide-chip.cur { border-color: var(--star); background: var(--star-soft); }
+.slide-chip { position: relative; }
+.chip-mark { position: absolute; top: 5px; left: 6px; color: var(--star-dark); display: flex; }
+.chip-mark.part { color: #a3acc4; }
+.slide-chip.none b { color: var(--ink-soft); }
+.slide-menu-legend { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 12.5px; color: var(--ink-soft); margin: 12px 0 0; }
+
+/* ── כוכבים ── */
+.star-row { display: inline-flex; gap: 3px; direction: ltr; }
+.star-row.animate { margin: 10px 0 6px; gap: 6px; }
+.star-row.animate svg { animation: star-in 0.45s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes star-in { from { transform: scale(0) rotate(-40deg); } to { transform: scale(1) rotate(0); } }
+.booklet-links { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid #eef0f6; }
 .player-stage { flex: 1; position: relative; min-height: 0; }
 
 .stage-outer { position: absolute; inset: 0 56px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -47,6 +59,10 @@ img.stage-fill { pointer-events: none; }
 .sticker.landed { z-index: 5; }
 /* רוחב טבעי, מוגבל לשפת הבמה (maxWidth בקוד) — שבירת שורה כמו ב-Jigzi */
 .text-sticker { white-space: pre-wrap; width: max-content; }
+/* שאלה במקום טקסט המקום: שורה אחת, רקע בהיר לניגודיות */
+.q-slot .rich { white-space: pre; background: rgba(255, 255, 255, 0.93); border-radius: 32px; padding: 6px 30px 10px; box-shadow: 0 6px 22px rgba(10, 20, 60, 0.22); }
+.q-slot .rich span { color: #16224a !important; }
+.q-slot .rich p { text-align: center !important; }
 .text-measure { position: absolute; left: 0; top: 0; width: max-content; visibility: hidden; pointer-events: none; }
 
 /* טקסט עשיר: ברירות מחדל מהערכה לפי סוג */
@@ -174,5 +190,34 @@ img.stage-fill { pointer-events: none; }
 .hm-name { text-align: right; white-space: nowrap; padding: 4px 8px !important; position: sticky; right: 0; background: #fff; z-index: 1; }
 .hm-cell { width: 38px; height: 32px; border-radius: 7px; text-align: center; font-weight: 700; font-size: 12px; }
 .hm-avg td { border-top: 2px solid #e2e8f0; font-weight: 800; }
+.hm-sub th { font-size: 12px; font-weight: 700; color: var(--sky); padding: 0 4px 4px; }
+.hm-stars { white-space: nowrap; font-size: 12.5px; }
+
+/* ── דוח הורים ── */
+.report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.report-unit { position: relative; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; background: #fafbff; }
+.report-unit.started { border-color: #c7d2fe; background: #f5f7ff; }
+.report-unit.done { border-color: var(--star); background: #fffaf0; }
+.ru-top { display: flex; align-items: baseline; gap: 6px; }
+.ru-top b { font-size: 15px; color: var(--night-2); }
+.ru-title { font-family: 'Fredoka One', sans-serif; font-size: 15px; }
+.ru-none, .ru-meta { font-size: 12px; color: var(--ink-soft); }
+.ru-print { position: absolute; top: 8px; left: 8px; color: var(--ink-soft); }
+.ru-print:hover { color: var(--night-2); }
+
+/* ── עזרים ── */
+.res { margin-top: 22px; }
+.res h2 { font-size: 20px; margin-bottom: 4px; }
+.res > p { color: var(--ink-soft); margin: 0 0 12px; font-size: 14px; }
+.res-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.res-card { background: #fff; border-radius: 18px; box-shadow: var(--shadow); padding: 16px; display: flex; flex-direction: column; gap: 8px; border: 1.5px solid transparent; }
+.res-card.featured { grid-column: 1 / -1; border-color: var(--star); background: linear-gradient(135deg, #fffaf0, #fff); }
+.res-card h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.res-card h3 .ic { width: 34px; height: 34px; border-radius: 999px; background: var(--sky-soft); color: var(--night-2); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.res-card.featured h3 .ic { background: var(--star-soft); color: var(--star-dark); }
+.res-card p { margin: 0; color: var(--ink-soft); font-size: 14px; line-height: 1.55; }
+.res-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.res-pages { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.res-pages a { font-size: 12.5px; padding: 4px 10px; }
 .hm-del { border: none; background: none; color: #cbd5e1; margin-right: 6px; padding: 2px; border-radius: 6px; }
 .hm-del:hover { color: var(--red); background: var(--red-soft); }

@@ -154,16 +154,19 @@ export function RichText({ value, override }: { value: string; override?: string
 }
 
 /**
- * מדבקת טקסט — בדיוק כמו Jigzi (components/src/stickers/text/dom.rs):
+ * מדבקת טקסט — כמו Jigzi (components/src/stickers/text/dom.rs):
  * מודדים את התיבה ברוחב טבעי (שורה לא שבורה), וממקמים לפיה כך שמרכזה בנקודת המדבקה.
  * התיבה עצמה מוגבלת לשפת הבמה — שורה ארוכה נשברת שם ויורדת למטה (על זה צוירו אזורי המגע).
- * בשאלות (override) המידות והמיקום נלקחים מטקסט המקום המקורי.
+ *
+ * שאלות (override) — שינוי מכוון מ-Jigzi: השאלה ממורכזת במקום של טקסט המקום, בשורה אחת
+ * (מוקטנת אם לא נכנסת), על רקע בהיר לניגודיות.
  */
 export function TextView({ s, override, style, className, onPointerDown }: {
   s: TextSticker['Text']; override?: string; style?: React.CSSProperties; className?: string;
   onPointerDown?: (e: React.PointerEvent) => void;
 }) {
   const t = s.transform;
+  const q = override !== undefined;
   const meas = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<[number, number] | null>(null);
   useLayoutEffect(() => {
@@ -172,24 +175,29 @@ export function TextView({ s, override, style, className, onPointerDown }: {
     const read = () => setSize((p) => (p && p[0] === el.offsetWidth && p[1] === el.offsetHeight ? p : [el.offsetWidth, el.offsetHeight]));
     read();
     document.fonts?.ready.then(read).catch(() => {});
-  }, [s.value]);
+  }, [s.value, override]);
   const [w, h] = size ?? [0, 0];
-  const left = W / 2 + t.translation[0] * W - w / 2;
+  const M = 24;
+  const fit = q && w > W - 2 * M ? (W - 2 * M) / w : 1;
+  let cx = W / 2 + t.translation[0] * W;
+  // שאלה: לא לחרוג מהבמה — מזיזים את המרכז פנימה אם צריך
+  if (q) cx = Math.min(Math.max(cx, (w * fit) / 2 + M), W - (w * fit) / 2 - M);
+  const left = cx - w / 2;
   const top = H / 2 + t.translation[1] * H - h / 2;
   return (
     <div
-      className={`sticker text-sticker ${className ?? ''}`}
+      className={`sticker text-sticker${q ? ' q-slot' : ''} ${className ?? ''}`}
       onPointerDown={onPointerDown}
       style={{
-        left, top, maxWidth: Math.max(40, W - left),
+        left, top, maxWidth: q ? undefined : Math.max(40, W - left),
         transformOrigin: `${w / 2}px ${h / 2}px`,
-        transform: `rotate(${angle(t)}rad)`,
+        transform: `rotate(${angle(t)}rad)${fit < 1 ? ` scale(${fit})` : ''}`,
         visibility: size ? undefined : 'hidden',
         ...style,
       }}
     >
       <RichText value={s.value} override={override} />
-      <div ref={meas} className="text-measure" aria-hidden="true"><RichText value={s.value} /></div>
+      <div ref={meas} className="text-measure" aria-hidden="true"><RichText value={s.value} override={override} /></div>
     </div>
   );
 }

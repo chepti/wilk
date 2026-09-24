@@ -3,6 +3,7 @@ import type { DragDropContent, Transform } from '../engine/types';
 import { Backgrounds, SpriteView, TextView, TraceLayer, spriteBox, useStage, angle, W, H, richPlainText } from '../engine/Stage';
 import { hitIndex } from '../engine/geometry';
 import { usePlay, wait } from '../engine/play';
+import { Q } from '../data/stars';
 import { playVoice, stopVoice, playPositive, playDropCorrect, playDropWrong } from '../lib/audio';
 
 // גרירה: פריטים Interactive נגררים לאזורי יעד. נכונות נקבעת רק לפי item_targets.
@@ -97,6 +98,8 @@ export default function DragDrop({ c }: { c: DragDropContent }) {
     const nextDone = new Set(done).add(i);
     setDone(nextDone);
     if (!failed.current[i]) play.record(true, itemText(i));
+    const req = c.items.map((_, k) => k).filter((k) => required[k]);
+    play.progress(req.reduce((s, k) => s + (nextDone.has(k) ? (failed.current[k] ? Q.retry : Q.first) : 0), 0) / Math.max(1, req.length));
     const all = c.items.every((_, k) => !required[k] || nextDone.has(k));
     if (!all) { playDropCorrect(); return; }
     if (finished.current) return;

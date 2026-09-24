@@ -84,6 +84,8 @@ function YoutubePlayer({ yt }: { yt: YoutubeHost }) {
   const player = useRef<any>(null);
   const activeRef = useRef(play.active);
   activeRef.current = play.active;
+  const playRef = useRef(play); // אירועי יוטיוב נרשמים פעם אחת — צריך תמיד את הגרסה העדכנית
+  playRef.current = play;
   const id = youtubeId(yt.url);
 
   useEffect(() => {
@@ -107,9 +109,11 @@ function YoutubePlayer({ yt }: { yt: YoutubeHost }) {
             if (yt.autoplay && activeRef.current) ev.target.playVideo();
           },
           onStateChange: (ev: any) => {
+            if (ev.data === 1) playRef.current.progress(0.5); // התחיל לצפות
             if (ev.data !== 0) return; // ended
+            playRef.current.progress(1); // צפה עד הסוף
             if (yt.done_action === 'Loop') ev.target.playVideo();
-            else if (yt.done_action === 'Next') play.finish();
+            else if (yt.done_action === 'Next') playRef.current.finish();
           },
         },
       });

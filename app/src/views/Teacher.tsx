@@ -7,6 +7,8 @@ import {
 import { loadCatalog, mastery, SKILL_ORDER, type UnitMeta } from '../data/units';
 import { avatarName } from '../data/avatars';
 import { BASE } from '../lib/mediaPaths';
+import { unitStars } from './StarMap';
+import ResourcesPanel from '../ui/Resources';
 import Footer from '../ui/Footer';
 import { IconLogOut, IconPlus, IconCopy, IconEye, IconRefresh, IconTrash, IconUsers, IconGrid, IconArrowRight, IconCheck } from '../ui/icons';
 
@@ -108,6 +110,7 @@ function Dashboard({ t, onOut }: { t: TeacherSession; onOut: () => void }) {
         {cls ? <ClassView t={t} cls={cls} onChange={reload} /> : (
           <div className="card" style={{ textAlign: 'center', color: 'var(--ink-soft)' }}>צרו כיתה ראשונה — תקבלו קוד בן 6 ספרות שהתלמידים מקלידים</div>
         )}
+        <ResourcesPanel audience="teacher" />
       </main>
       <Footer />
     </div>
@@ -244,6 +247,19 @@ function UnitsHeatmap({ students, units }: { students: HeatmapStudent[]; units: 
             <th className="hm-name">תלמיד</th>
             {units.map((u) => <th key={u.id} className="hm-unit"><span className="tip-host">{u.n}<span className="tip" dir="ltr">{u.title}</span></span></th>)}
           </tr>
+          <tr className="hm-sub">
+            <th className="hm-name">נכנסו</th>
+            {units.map((u) => {
+              const who = students.filter((s) => (s.positions[u.id]?.visits ?? 0) > 0 || s.positions[u.id]);
+              const visits = students.reduce((n, s) => n + (s.positions[u.id]?.visits ?? 0), 0);
+              return (
+                <th key={u.id} className="tip-host">
+                  {who.length || ''}
+                  <span className="tip">{who.length} מתוך {students.length} תלמידים · {visits} כניסות</span>
+                </th>
+              );
+            })}
+          </tr>
         </thead>
         <tbody>
           {students.map((s) => (
@@ -255,14 +271,16 @@ function UnitsHeatmap({ students, units }: { students: HeatmapStudent[]; units: 
                 let c = 0, w = 0;
                 for (let i = 0; i < u.slides; i++) { const r = s.slides[`${u.id}:${i}`]; if (r) { c += r.c; w += r.w; } }
                 const acc = c + w > 0 ? c / (c + w) : null;
+                const stars = p ? unitStars(u, s) : 0;
                 const pct = p ? (p.completed ? 1 : Math.min(0.99, p.furthest / u.slides)) : 0;
-                const h = p?.completed ? heat(acc ?? 1) : p ? { bg: '#e0e7ff', fg: '#243578' } : heat(null);
+                const bg = !p ? '#f1f5f9' : p.completed ? ['#fee2e2', '#fee2e2', '#fde68a', '#fde68a', '#86efac', '#16a34a'][stars] : '#e0e7ff';
                 return (
-                  <td key={u.id} className="hm-cell tip-host" style={{ background: h.bg, color: h.fg }}>
-                    {p?.completed ? (acc === null ? <IconCheck size={14} strokeWidth={3} /> : Math.round(acc * 100)) : p ? `${Math.round(pct * 100)}%` : ''}
+                  <td key={u.id} className="hm-cell hm-stars tip-host" style={{ background: bg, color: stars === 5 && p?.completed ? '#fff' : '#243578' }}>
+                    {p ? (p.completed ? <><b>{stars}</b><StarGlyph /></> : `${Math.round(pct * 100)}%`) : ''}
                     <span className="tip">
-                      {p ? (p.completed ? 'הושלמה' : `עצר/ה בשקף ${p.slide + 1} מתוך ${u.slides}`) : 'עוד לא התחיל/ה'}
-                      {acc !== null ? ` · דיוק ${Math.round(acc * 100)}%` : ''}
+                      {p ? (p.completed ? `הושלמה · ${stars} כוכבים` : `עצר/ה בשקף ${p.slide + 1} מתוך ${u.slides} · ${stars} כוכבים עד כה`) : 'עוד לא נכנס/ה'}
+                      {p?.visits ? ` · ${p.visits} כניסות` : ''}
+                      {acc !== null ? ` · דיוק בניסיון ראשון ${Math.round(acc * 100)}%` : ''}
                     </span>
                   </td>
                 );
@@ -271,8 +289,18 @@ function UnitsHeatmap({ students, units }: { students: HeatmapStudent[]; units: 
           ))}
         </tbody>
       </table>
-      <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>תא כחול = באמצע התחנה (אחוז התקדמות) · תא צבעוני = הושלמה (דיוק בניסיון הראשון)</p>
+      <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+        תא כחול = באמצע התחנה (אחוז התקדמות) · תא צבעוני = הושלמה, מספר הכוכבים (0–5) לפי איכות הביצוע: דילוגים, טעויות ורמזים מורידים כוכבים
+      </p>
     </div>
+  );
+}
+
+function StarGlyph() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" style={{ marginRight: 2, verticalAlign: '-1px' }} aria-hidden="true">
+      <path d="M12 2.6l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17.2l-5.9 3.2 1.3-6.5L2.5 9.4l6.6-.8z" fill="currentColor" />
+    </svg>
   );
 }
 
