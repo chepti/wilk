@@ -44,6 +44,14 @@ export function skillLevel(
   return 'progress';
 }
 
+/** כוכבי תחנה: הטוב מבין השמור בשרת לבין החישוב מהשקפים */
+export function unitStars(
+  u: { id: string; kinds: string[] },
+  p: { positions: Record<string, { stars?: number }>; slides: Record<string, SlideStat> },
+): number {
+  return Math.max(p.positions[u.id]?.stars ?? 0, starsFor(unitQuality(u.id, u.kinds, p.slides)));
+}
+
 /** שקפים שעוד אפשר לשפר (לתפריט השקפים ולמסך הסיום) */
 export function weakSlides(unitId: string, kinds: string[], slides: Record<string, SlideStat>): number[] {
   return kinds.flatMap((k, i) => (STAR_KINDS.has(k) && (slides[`${unitId}:${i}`]?.q ?? 0) < 0.95 ? [i] : []));

@@ -3,6 +3,8 @@ import { loadSession, saveSession, fetchProgress, emptyProgress, type StudentSes
 import Landing from './views/Landing';
 import Join from './views/Join';
 import StarMap from './views/StarMap';
+import Journey from './views/Journey';
+import PathEdit from './views/PathEdit';
 import PlayView from './views/PlayView';
 import Teacher from './views/Teacher';
 import Parents from './views/Parents';
@@ -53,6 +55,7 @@ export default function App() {
   const route = parts[0] || '';
 
   if (route === 'teacher') return <Teacher />;
+  if (route === 'path-edit') return <PathEdit />;
   if (route === 'parents') return <Parents session={session} progress={progress} />;
   if (route === 'join') {
     return <Join initialCode={parts[1] || ''} onJoined={(s) => { setSession(s); nav('/map'); }} />;
@@ -62,5 +65,6 @@ export default function App() {
     const jump = parts[2] && /^\d+$/.test(parts[2]) ? Math.max(0, +parts[2] - 1) : undefined;
     return <PlayView key={parts.slice(1, 3).join('/')} unitId={parts[1]} jump={jump} session={session} progress={progress} onReported={refresh} />;
   }
-  return <StarMap session={session} progress={progress} onLogout={logout} />;
+  if (route === 'stars') return <StarMap session={session} progress={progress} onLogout={logout} />;
+  return <Journey session={session} progress={progress} onLogout={logout} />;
 }

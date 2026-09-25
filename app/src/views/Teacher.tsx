@@ -7,7 +7,7 @@ import {
 import { loadCatalog, mastery, SKILL_ORDER, type UnitMeta } from '../data/units';
 import { avatarName } from '../data/avatars';
 import { BASE } from '../lib/mediaPaths';
-import { unitStars } from './StarMap';
+import { unitStars } from '../data/stars';
 import ResourcesPanel from '../ui/Resources';
 import PlaysChart from '../ui/PlaysChart';
 import { fetchPlays } from '../lib/api';

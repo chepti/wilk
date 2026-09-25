@@ -4,7 +4,7 @@ import { fetchPlays, type ProgressData, type StudentSession } from '../lib/api';
 import { loadCatalog, mastery, SKILL_ORDER, type UnitMeta } from '../data/units';
 import { ABOUT, RIGHTS, BOOKLET_PDF, BOOKLET_PAGE, pdfPage } from '../data/resources';
 import { avatarName } from '../data/avatars';
-import { unitStars } from './StarMap';
+import { unitStars } from '../data/stars';
 import { skillLevel } from '../data/stars';
 import PlaysChart from '../ui/PlaysChart';
 import StarRow from '../ui/StarRow';

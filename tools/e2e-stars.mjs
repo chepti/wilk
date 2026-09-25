@@ -19,9 +19,9 @@ page.on('pageerror', (e) => errors.push(e.message));
 await page.goto(base);
 await page.evaluate(() => { localStorage.clear(); localStorage.setItem('wilk_session', JSON.stringify({ token: 'guest', nickname: 'e2e', emoji: '⚽', freeNav: true })); });
 await page.reload();
-await page.waitForSelector('.star-node');
+await page.waitForSelector('.jnode');
 // נגיעה במפה → הפעילות נפתחת ישר (בלי מסך ביניים)
-await page.click('.star-node >> nth=0');
+await page.click('.jnode >> nth=0');
 await page.waitForSelector('.stage > *');
 const direct = !(await page.$('.play-big'));
 

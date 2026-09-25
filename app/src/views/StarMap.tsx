@@ -6,12 +6,12 @@ import SkyStars from '../ui/Sky';
 import Footer from '../ui/Footer';
 import { IconLogOut, IconPlay, IconLock, IconCheck } from '../ui/icons';
 import { avatarName } from '../data/avatars';
-import { starsFor, unitQuality, skillLevel } from '../data/stars';
+import { unitStars, skillLevel } from '../data/stars';
 import StarRow from '../ui/StarRow';
 import { IconHeart } from '../ui/icons';
 
 /** מצב יחידה לתצוגה */
-function unitState(u: UnitMeta, p: ProgressData, unlocked: boolean) {
+export function unitState(u: UnitMeta, p: ProgressData, unlocked: boolean) {
   const pos = p.positions[u.id];
   if (pos?.completed) return { kind: 'done' as const, pct: 1 };
   if (pos && pos.furthest > 0) return { kind: 'started' as const, pct: Math.min(0.98, pos.furthest / u.slides) };
@@ -135,10 +135,7 @@ function Constellation({ units, progress, unlocked, current }: {
   );
 }
 
-/** כוכבי תחנה: הטוב מבין השמור בשרת לבין החישוב מהשקפים */
-export function unitStars(u: UnitMeta, p: ProgressData): number {
-  return Math.max(p.positions[u.id]?.stars ?? 0, starsFor(unitQuality(u.id, u.kinds, p.slides)));
-}
+export { unitStars };
 
 function StarNode({ u, st, stars, x, y, isCurrent }: {
   u: UnitMeta; st: ReturnType<typeof unitState>; stars: number | null; x: number; y: number; isCurrent: boolean;
@@ -188,11 +185,11 @@ function StarNode({ u, st, stars, x, y, isCurrent }: {
 
 // ── מדף האותיות: אותיות שהתלמיד כבר שולט בהן ──
 
-function SkillShelf({ progress, units }: { progress: ProgressData; units: UnitMeta[] }) {
+export function SkillShelf({ progress, units, always = false }: { progress: ProgressData; units: UnitMeta[]; always?: boolean }) {
   const taught = new Set(units.flatMap((u) => u.skills));
   const skills = SKILL_ORDER.filter((s) => taught.has(s));
   const any = Object.keys(progress.skills).length > 0;
-  if (!any) return null;
+  if (!any && !always) return null;
   return (
     <section style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 22, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.16)' }}>
       <h3 style={{ fontSize: 16, marginBottom: 10, opacity: 0.9 }}>האותיות והצלילים שלי</h3>

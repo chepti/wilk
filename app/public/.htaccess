@@ -1,0 +1,7 @@
+# האפליקציה לא עוברת דרך מטמון LiteSpeed של וורדפרס — index.html תמיד טרי (הנכסים עם hash בשם)
+<IfModule LiteSpeed>
+  CacheLookup off
+</IfModule>
+<FilesMatch "\.(html|json)$">
+  Header set Cache-Control "no-cache"
+</FilesMatch>
