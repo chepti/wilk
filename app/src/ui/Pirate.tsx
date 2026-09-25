@@ -33,7 +33,13 @@ export default function Pirate({ look, size = 64, items }: { look: PirateLook; s
       {has('earring') && <circle cx="24" cy="54" r="4.5" fill="none" stroke="#f1c40f" strokeWidth="3" />}
 
       {/* כיסוי ראש: כתר / כובע / בנדנה */}
-      {has('crown') ? (
+      {has('goldhat') ? (
+        <>
+          <path d="M14,32 C26,8 74,8 86,32 C70,26 30,26 14,32 Z" fill="#f1c40f" stroke={O} strokeWidth="3" strokeLinejoin="round" />
+          <path d="M22,29 C36,24 64,24 78,29" stroke="#fff6c9" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+          <path d="M50,12 l3,6 6,1 -4.5,4 1,6 -5.5,-3 -5.5,3 1,-6 -4.5,-4 6,-1z" fill="#3aa7df" stroke={O} strokeWidth="1.5" strokeLinejoin="round" />
+        </>
+      ) : has('crown') ? (
         <path d="M28,28 L32,10 L41,22 L50,6 L59,22 L68,10 L72,28 Z" fill="#f1c40f" stroke={O} strokeWidth="3" strokeLinejoin="round" />
       ) : has('hat') ? (
         <>
@@ -59,8 +65,23 @@ export default function Pirate({ look, size = 64, items }: { look: PirateLook; s
         </g>
       )}
 
-      {/* יד: חרב / משקפת / מפה (הראשון שנענד) */}
-      {has('sword') ? (
+      {/* יד: דגל / תיבת זהב / חרב / משקפת / מפה (פריט יד אחד) */}
+      {has('flag') ? (
+        <g transform="translate(16 92)">
+          <rect x="-2" y="-52" width="4" height="54" rx="2" fill="#8a5a2b" stroke={O} strokeWidth="2" />
+          <path d="M2,-50 h24 l-6,9 6,9 h-24 z" fill="#2c2c2c" stroke={O} strokeWidth="2" strokeLinejoin="round" />
+          <circle cx="12" cy="-41" r="4" fill="#fff" />
+          <path d="M7,-35 l10,0 M8,-37 l8,4 M16,-37 l-8,4" stroke="#fff" strokeWidth="1.5" />
+        </g>
+      ) : has('goldchest') ? (
+        <g transform="translate(15 92)">
+          <rect x="-13" y="-14" width="26" height="16" rx="2" fill="#f1c40f" stroke={O} strokeWidth="2.5" />
+          <path d="M-13,-14 q13,-12 26,0" fill="#f7dc6f" stroke={O} strokeWidth="2.5" />
+          <rect x="-3" y="-11" width="6" height="7" rx="1" fill="#b9770e" stroke={O} strokeWidth="1.5" />
+          <circle cx="-7" cy="-20" r="3" fill="#3aa7df" stroke={O} strokeWidth="1" />
+          <circle cx="6" cy="-21" r="2.5" fill="#3aa7df" stroke={O} strokeWidth="1" />
+        </g>
+      ) : has('sword') ? (
         <g transform="translate(16 80) rotate(-35)">
           <rect x="-2.5" y="-30" width="5" height="30" rx="2" fill="#dfe6e9" stroke={O} strokeWidth="2" />
           <rect x="-8" y="0" width="16" height="4" rx="2" fill="#f1c40f" stroke={O} strokeWidth="2" />

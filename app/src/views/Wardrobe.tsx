@@ -3,7 +3,9 @@ import { nav } from '../App';
 import { saveLook, type ProgressData, type StudentSession } from '../lib/api';
 import { loadCatalog, type UnitMeta } from '../data/units';
 import { unitStars } from '../data/stars';
-import { BASES, ITEMS, DEFAULT_LOOK, nextItem, wearable, type PirateLook } from '../data/pirates';
+import { BASES, ITEMS, DEFAULT_LOOK, nextItem, wearable, isOpen, type PirateLook } from '../data/pirates';
+import { gems as countGems } from '../data/rewards';
+import { GemGlyph } from '../ui/RewardIcons';
 import Pirate from '../ui/Pirate';
 import SkyStars from '../ui/Sky';
 import { IconArrowRight, IconLock, IconCheck } from '../ui/icons';
@@ -18,7 +20,8 @@ export default function Wardrobe({ session, progress, onSaved }: { session: Stud
   useEffect(() => { if (progress.look) setLook(progress.look); }, [progress.look]);
 
   const stars = units.reduce((n, u) => n + (progress.positions[u.id] ? unitStars(u, progress) : 0), 0);
-  const worn = wearable(look, stars);
+  const gemCount = countGems(units, progress);
+  const worn = wearable(look, stars, gemCount);
   const next = nextItem(stars);
 
   const update = (l: PirateLook) => {
@@ -47,10 +50,10 @@ export default function Wardrobe({ session, progress, onSaved }: { session: Stud
           <div>
             <h1 style={{ fontSize: 26 }}>השודד/ת של {session.nickname}</h1>
             <p style={{ margin: '4px 0 0', opacity: 0.85 }}>
-              <b style={{ color: '#ffc93c' }}>{stars}</b> כוכבים נאספו
+              <b style={{ color: '#ffc93c' }}>{stars}</b> כוכבים · <b style={{ color: '#7fd3ff' }}>{gemCount}</b> אבני חן
               {next ? <> · עוד <b style={{ color: '#ffc93c' }}>{next.stars - stars}</b> כוכבים ל{next.name}</> : ' · כל האוצרות נפתחו!'}
             </p>
-            <p style={{ margin: '4px 0 0', fontSize: 13, opacity: 0.65 }}>החברים בכיתה רואים את הדמות הזו — לא את התמונה הסודית שלך</p>
+            <p style={{ margin: '4px 0 0', fontSize: 13, opacity: 0.65 }}>אבן חן על כל תחנה עם 5 כוכבים · החברים בכיתה רואים את הדמות הזו — לא את התמונה הסודית שלך</p>
           </div>
         </div>
 
@@ -66,14 +69,14 @@ export default function Wardrobe({ session, progress, onSaved }: { session: Stud
         <h2 className="wr-h">אוצרות לדמות</h2>
         <div className="wr-grid items">
           {ITEMS.map((it) => {
-            const open = stars >= it.stars;
+            const open = isOpen(it, stars, gemCount);
             const on = worn.includes(it.id);
             return (
               <button key={it.id} className={`wr-card item${on ? ' on' : ''}${open ? '' : ' locked'}`} disabled={!open} onClick={() => toggle(it.id)}>
                 <Pirate look={{ base: look.base, items: [it.id] }} size={58} />
                 <span className="wr-name">{it.name}</span>
                 {open ? (on && <span className="wr-badge"><IconCheck size={12} strokeWidth={3} /></span>) : (
-                  <span className="wr-lock"><IconLock size={12} /> {it.stars}</span>
+                  <span className="wr-lock"><IconLock size={12} /> {it.gems ? <>{it.gems} <GemGlyph size={11} /></> : it.stars}</span>
                 )}
               </button>
             );

@@ -194,7 +194,9 @@ img.stage-fill { pointer-events: none; }
 .hm-stars { white-space: nowrap; font-size: 12.5px; }
 
 /* ── מפת המסע ── */
-.journey-page { min-height: 100vh; background: #0b1330; color: #fff; display: flex; flex-direction: column; }
+.journey-page { min-height: 100vh; background: #0b1330; color: #fff; display: flex; flex-direction: column; overflow-x: hidden; }
+.jb-who { min-width: 0; }
+.jb-who b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 36vw; }
 .journey-bar {
   position: sticky; top: 0; z-index: 30; display: flex; justify-content: space-between; align-items: center; gap: 10px;
   padding: 10px 14px; background: linear-gradient(180deg, rgba(11, 19, 48, 0.92), rgba(11, 19, 48, 0.55) 80%, transparent);
@@ -206,7 +208,20 @@ img.stage-fill { pointer-events: none; }
 .jb-actions { display: flex; align-items: center; gap: 8px; }
 .jb-actions .icon-btn { width: 40px; height: 40px; }
 .jb-stars { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; background: rgba(255, 255, 255, 0.14); border: 1.5px solid rgba(255, 255, 255, 0.35); border-radius: 999px; padding: 6px 12px; }
-.journey-board { position: relative; width: 100%; max-width: 760px; margin: -60px auto 0; overflow: hidden; }
+.journey-wide { position: relative; width: 100%; margin-top: -60px; }
+/* צדי המסך ממשיכים את הסצנה: שמיים → גבעות → ים (לפי אותם גבהים יחסיים) */
+.journey-backdrop {
+  position: absolute; inset: 0; overflow: hidden;
+  background: linear-gradient(180deg, #0b1330 0%, #1d2c6b 32%, #3f63c9 55%, #8fc8f2 74%, #b9e2fb 79%,
+    #6dbf69 79.5%, #5fb65c 86%, #3aa7df 86.5%, #1b6fb3 100%);
+}
+.journey-backdrop .sky-stars { position: absolute; inset: 0 0 45% 0; height: 55%; }
+.journey-board {
+  position: relative; width: 100%; max-width: 760px; margin: 0 auto; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+}
+@media (max-width: 800px) { .journey-board { -webkit-mask-image: none; mask-image: none; } }
 .journey-scene, .journey-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .journey-path { position: absolute; inset: 0; pointer-events: none; }
 .journey-start {
@@ -278,6 +293,72 @@ img.stage-fill { pointer-events: none; }
 .wr-name { font-size: 12.5px; font-weight: 700; }
 .wr-badge { position: absolute; top: 6px; left: 6px; background: #16a34a; border-radius: 999px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
 .wr-lock { position: absolute; top: 6px; left: 6px; font-size: 11.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 2px; background: rgba(11, 19, 48, 0.8); border-radius: 999px; padding: 2px 7px; }
+
+/* ── פאנל תגמולים (צד במחשב / מגירה בנייד) ── */
+.journey-side {
+  position: fixed; top: 72px; right: 16px; width: 290px; max-height: calc(100vh - 150px); overflow-y: auto; z-index: 25;
+  background: rgba(11, 19, 48, 0.82); border: 1.5px solid rgba(255, 255, 255, 0.18); border-radius: 22px; padding: 12px;
+  backdrop-filter: blur(6px); scrollbar-width: thin;
+}
+@media (max-width: 1180px) { .journey-side { display: none; } }
+.show-narrow { display: none !important; }
+@media (max-width: 1180px) { .show-narrow { display: inline-flex !important; } }
+@media (max-width: 560px) { .hide-narrow { display: none !important; } }
+.jb-pill { background: rgba(255, 255, 255, 0.14) !important; color: #fff !important; border-color: rgba(255, 255, 255, 0.35) !important; white-space: nowrap; }
+.jb-stars.lit { border-color: #ff8a2a; background: rgba(255, 138, 42, 0.2); }
+@media (max-width: 560px) {
+  .journey-bar { padding: 8px 10px; }
+  .jb-actions { gap: 5px; }
+  .jb-stars { padding: 5px 8px; font-size: 13px; }
+  .jb-next { display: none; }
+}
+.rp { display: flex; flex-direction: column; gap: 10px; color: #fff; }
+.rp-me { display: flex; align-items: center; gap: 10px; background: none; border: none; color: #fff; text-align: right; padding: 2px; }
+.rp-me b { display: block; font-size: 17px; }
+.rp-me span { display: block; font-size: 12.5px; opacity: 0.8; }
+.rp-me .rp-link { color: #ffc93c; opacity: 1; font-weight: 700; margin-top: 2px; }
+.rp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rp-stat, .rp-card { background: rgba(255, 255, 255, 0.08); border: 1.5px solid rgba(255, 255, 255, 0.14); border-radius: 16px; padding: 10px 12px; }
+.rp-stat { display: flex; align-items: center; gap: 6px; }
+.rp-stat b { font-size: 19px; }
+.rp-stat span { font-size: 12.5px; opacity: 0.75; }
+.rp-card { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.rp-card b { font-size: 14.5px; }
+.rp-card span { opacity: 0.85; line-height: 1.45; }
+.rp-flames { display: flex; gap: 4px; }
+.rp-bar { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.15); overflow: hidden; margin: 3px 0; }
+.rp-bar > div { height: 100%; background: linear-gradient(90deg, #ffe08a, #f5b82e); border-radius: 999px; }
+.rp-bottle { flex-direction: row; align-items: center; gap: 10px; color: #fff; text-align: right; cursor: pointer; border-color: rgba(127, 211, 255, 0.45); }
+.rp-bottle:hover { background: rgba(127, 211, 255, 0.15); }
+.rp-certs { display: flex; gap: 6px; flex-wrap: wrap; }
+.rp section { padding: 10px 12px !important; }
+.rp section h3 { font-size: 14.5px !important; }
+.rp section span[class='tip-host'], .rp section .tip-host { min-width: 34px !important; height: 34px !important; font-size: 16px !important; padding: 0 7px !important; }
+.jbottle { position: absolute; transform: translate(-50%, -50%); background: none; border: none; padding: 0; z-index: 6; animation: bob 2.6s ease-in-out infinite; cursor: pointer; }
+@keyframes bob { 0%, 100% { transform: translate(-50%, -50%) rotate(-6deg); } 50% { transform: translate(-50%, -62%) rotate(6deg); } }
+
+/* ── תעודת קפטן ── */
+.cert-page { min-height: 100vh; background: #eef1f8; padding: 16px; }
+.cert-tools { display: flex; justify-content: space-between; align-items: center; gap: 10px; max-width: 900px; margin: 0 auto 14px; flex-wrap: wrap; }
+.cert-g { display: flex; gap: 6px; }
+.cert { max-width: 900px; margin: 0 auto; aspect-ratio: 1.414; background: #fffaf0; border-radius: 10px; box-shadow: var(--shadow-lg); padding: 22px; }
+.cert-frame { height: 100%; border: 6px double #c98a06; border-radius: 6px; padding: 18px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; color: #3b2600; }
+.cert-stars { display: flex; gap: 6px; }
+.cert h1 { font-size: 46px; margin: 6px 0 0; color: #16224a; }
+.cert-stage { margin: 2px 0 10px; font-weight: 700; color: #8a5a00; font-size: 18px; }
+.cert-body { display: flex; align-items: center; gap: 26px; flex: 1; text-align: right; }
+.cert-body p { margin: 4px 0; font-size: 19px; line-height: 1.6; }
+.cert-to { font-size: 16px !important; opacity: 0.75; }
+.cert-name { font-size: 44px !important; font-weight: 900; color: #16224a; margin: 0 !important; }
+.cert-en { font-family: 'Fredoka One', sans-serif; }
+.cert-bravo { font-weight: 900; color: #c0392b; font-size: 22px !important; }
+.cert-foot { width: 100%; display: flex; justify-content: space-between; font-size: 13px; opacity: 0.75; border-top: 1px solid #e8d3a3; padding-top: 8px; }
+@media print {
+  @page { size: A4 landscape; margin: 8mm; }
+  .no-print { display: none !important; }
+  .cert-page { background: #fff; padding: 0; }
+  .cert { box-shadow: none; max-width: none; width: 100%; }
+}
 
 /* חברים על המפה */
 .jfriends { position: absolute; transform: translate(-100%, -40%); display: flex; align-items: flex-end; z-index: 4; pointer-events: auto; }

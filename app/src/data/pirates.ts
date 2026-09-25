@@ -15,7 +15,13 @@ export const BASES: { name: string; skin: string; shirt: string; band: string }[
   { name: 'עוז', skin: '#6e4630', shirt: '#34495e', band: '#e67e22' },
 ];
 
-export interface PirateItem { id: string; name: string; stars: number; slot: 'head' | 'face' | 'ear' | 'shoulder' | 'hand' | 'body' }
+export interface PirateItem {
+  id: string; name: string; slot: 'head' | 'face' | 'ear' | 'shoulder' | 'hand' | 'body';
+  /** נפתח לפי סך הכוכבים */
+  stars: number;
+  /** או לפי אבני חן (תחנות ב-5 כוכבים) */
+  gems?: number;
+}
 
 /** הפריטים נפתחים לפי סך הכוכבים (18 תחנות × 5 = 90 לכל היותר). כוכבים לא "מתבזבזים" */
 export const ITEMS: PirateItem[] = [
@@ -28,22 +34,28 @@ export const ITEMS: PirateItem[] = [
   { id: 'map', name: 'מפת אוצר', stars: 52, slot: 'hand' },
   { id: 'coat', name: 'מעיל קפטן', stars: 65, slot: 'body' },
   { id: 'crown', name: 'כתר מלך הים', stars: 80, slot: 'head' },
+  // אוצרות מיוחדים — רק באבני חן (תחנה מושלמת = אבן חן)
+  { id: 'flag', name: 'דגל שודדים', stars: 0, gems: 2, slot: 'hand' },
+  { id: 'goldchest', name: 'תיבת זהב', stars: 0, gems: 5, slot: 'hand' },
+  { id: 'goldhat', name: 'כובע זהב', stars: 0, gems: 10, slot: 'head' },
 ];
 
 export const DEFAULT_LOOK: PirateLook = { base: 0, items: [] };
 
-export function unlockedItems(stars: number): PirateItem[] {
-  return ITEMS.filter((i) => stars >= i.stars);
+export const isOpen = (i: PirateItem, stars: number, gems = 0) => (i.gems ? gems >= i.gems : stars >= i.stars);
+
+export function unlockedItems(stars: number, gems = 0): PirateItem[] {
+  return ITEMS.filter((i) => isOpen(i, stars, gems));
 }
 
 /** הפריט הבא שייפתח — "עוד 4 כוכבים לתוכי!" */
 export function nextItem(stars: number): PirateItem | undefined {
-  return ITEMS.find((i) => stars < i.stars);
+  return ITEMS.find((i) => !i.gems && stars < i.stars);
 }
 
 /** ענידה: פריט אחד לכל מקום בגוף; רק פריטים שנפתחו */
-export function wearable(look: PirateLook, stars: number): string[] {
-  const open = new Set(unlockedItems(stars).map((i) => i.id));
+export function wearable(look: PirateLook, stars: number, gems = 0): string[] {
+  const open = new Set(unlockedItems(stars, gems).map((i) => i.id));
   const bySlot = new Map<string, string>();
   for (const id of look.items) {
     const it = ITEMS.find((x) => x.id === id);

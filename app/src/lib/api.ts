@@ -29,7 +29,11 @@ export interface ProgressData {
   showFriends?: boolean;
   /** דמות השודד (מוצגת לחברים; האימוג'י נשאר סודי) */
   look?: PirateLook | null;
+  /** ימי עבודה (YYYY-MM-DD) — ללהבת ההתמדה */
+  days?: string[];
 }
+
+export interface ClassGoal { name: string; students: number; stars: number; goal: number; step: number; treasures: number }
 
 export interface Classmate { name: string; look: PirateLook | null; unit: string }
 
@@ -157,6 +161,8 @@ export async function reportResult(s: StudentSession, r: SlideResult): Promise<v
       ? { ...prev, n: prev.n + 1, q: Math.max(prev.q ?? 0, r.quality) }
       : { c: r.correct, w: r.wrong, n: 1, q: r.quality };
     applyPosition(p, r.unitId, r.next, r.total);
+    const today = new Date().toISOString().slice(0, 10);
+    p.days = [...new Set([...(p.days ?? []), today])].slice(-180);
     const pos = p.positions[r.unitId];
     pos.stars = Math.max(pos.stars ?? 0, r.stars);
     saveGuest(s, p);
@@ -190,6 +196,11 @@ export async function saveLook(s: StudentSession, look: PirateLook): Promise<voi
 export async function fetchClassmates(s: StudentSession): Promise<Classmate[]> {
   if (isLocalSession(s)) return [];
   try { return (await request<{ friends: Classmate[] }>('student.php?a=classmates', undefined, s.token)).friends; } catch { return []; }
+}
+
+export async function fetchClassGoal(s: StudentSession): Promise<ClassGoal | null> {
+  if (isLocalSession(s)) return null;
+  try { return await request<ClassGoal>('student.php?a=class', undefined, s.token); } catch { return null; }
 }
 
 export async function setClassFriends(t: TeacherSession, classId: number, on: boolean): Promise<void> {

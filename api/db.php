@@ -246,9 +246,15 @@ function student_progress(int $sid): array {
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
         $skills[$r['skill']] = ['c' => (int)$r['correct'], 'w' => (int)$r['wrong']];
     }
+    // ימי עבודה (180 יום אחרונים) — ללהבת ההתמדה: פעמיים בשבוע
+    $days = [];
+    $st = $db->prepare("SELECT DISTINCT date(created_at) AS d FROM slide_results WHERE student_id = ? AND created_at >= datetime('now', '-180 days') ORDER BY d");
+    $st->execute([$sid]);
+    foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $d) $days[] = $d;
     return [
         'positions' => $pos ?: new stdClass(),
         'slides' => $slides ?: new stdClass(),
         'skills' => $skills ?: new stdClass(),
+        'days' => $days,
     ];
 }

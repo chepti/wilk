@@ -1,33 +1,39 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { nav } from '../App';
-import type { StudentSession, ProgressData } from '../lib/api';
+import type { StudentSession, ProgressData, ClassGoal } from '../lib/api';
+import { fetchClassmates, fetchClassGoal, type Classmate } from '../lib/api';
 import { loadCatalog, type UnitMeta } from '../data/units';
 import { loadJourney, bgUrl, type JourneyConfig, type Pt } from '../data/journey';
 import { unitStars } from '../data/stars';
-import { avatarName } from '../data/avatars';
+import { persistence, gems as countGems, bottle as findBottle, WEEK_GOAL } from '../data/rewards';
 import { BASE } from '../lib/mediaPaths';
 import JourneyScene from '../ui/JourneyScene';
+import SkyStars from '../ui/Sky';
 import Footer from '../ui/Footer';
 import { unitState, SkillShelf } from './StarMap';
-import { IconLogOut, IconPlay, IconLock, IconHeart, IconSparkles, IconX } from '../ui/icons';
-import { fetchClassmates, type Classmate } from '../lib/api';
-import { DEFAULT_LOOK, nextItem, wearable, type PirateLook } from '../data/pirates';
+import { IconLogOut, IconPlay, IconLock, IconHeart, IconSparkles, IconX, IconPrint } from '../ui/icons';
+import { DEFAULT_LOOK, nextItem, wearable } from '../data/pirates';
 import Pirate from '../ui/Pirate';
+import { GemGlyph, Flame, Bottle } from '../ui/RewardIcons';
 
 // מפת מסע אנכית: מתחילים למטה (אי האוצר) ומטפסים לכוכבים. כל תחנה = תיבת אוצר;
 // הושלמה → תיבה פתוחה עם אבני חן. מעל כל תחנה קשת של 5 כוכבים.
+// בצד (מחשב) / במגירה (נייד): הדמות, להבת התמדה, אבני חן, יעד כיתתי, בקבוק, תעודות והאותיות שלי.
 
 const CHEST_CLOSED = `${BASE}journey/chest-closed.webp`;
 const CHEST_OPEN = `${BASE}journey/chest-open.webp`;
+/** תעודת קפטן אחרי 6, 12 ו-18 תחנות */
+export const CERT_LEVELS = [6, 12, 18];
 
 export default function Journey({ session, progress, onLogout }: {
   session: StudentSession; progress: ProgressData; onLogout: () => void;
 }) {
   const [units, setUnits] = useState<UnitMeta[]>([]);
   const [cfg, setCfg] = useState<JourneyConfig | null>(null);
-  const [shelf, setShelf] = useState(false);
+  const [drawer, setDrawer] = useState(false);
   const [friends, setFriends] = useState<Classmate[]>([]);
-  useEffect(() => { loadCatalog().then(setUnits); loadJourney().then(setCfg); }, []);
+  const [goal, setGoal] = useState<ClassGoal | null>(null);
+  useEffect(() => { loadCatalog().then(setUnits); loadJourney().then(setCfg); fetchClassGoal(session).then(setGoal); }, []);
   useEffect(() => { if (progress.showFriends) fetchClassmates(session).then(setFriends); else setFriends([]); }, [progress.showFriends]);
 
   const free = progress.freeNav ?? session.freeNav ?? true;
@@ -37,9 +43,21 @@ export default function Journey({ session, progress, onLogout }: {
     .sort((a, b) => (progress.positions[b.id].at ?? '').localeCompare(progress.positions[a.id].at ?? ''))[0];
   const current = inProgress ?? units.find((u) => !progress.positions[u.id]?.completed);
   const totalStars = units.reduce((n, u) => n + (progress.positions[u.id] ? unitStars(u, progress) : 0), 0);
+  const gemCount = countGems(units, progress);
   const look = progress.look ?? DEFAULT_LOOK;
-  const worn = wearable(look, totalStars);
+  const worn = wearable(look, totalStars, gemCount);
   const next = nextItem(totalStars);
+  const flame = persistence(progress.days);
+  const btl = units.length ? findBottle(units, progress) : null;
+  const done = units.filter((u) => progress.positions[u.id]?.completed).length;
+
+  const panel = (
+    <RewardsPanel
+      session={session} look={<Pirate look={look} items={worn} size={70} />} stars={totalStars} gems={gemCount}
+      next={next ? `עוד ${next.stars - totalStars} כוכבים ל${next.name}` : 'כל אוצרות הכוכבים נפתחו!'}
+      flame={flame} goal={goal} bottle={btl} done={done} progress={progress} units={units}
+    />
+  );
 
   return (
     <div className="journey-page">
@@ -55,18 +73,23 @@ export default function Journey({ session, progress, onLogout }: {
           </div>
         </div>
         <div className="jb-actions">
-          <span className="jb-stars tip-host">
-            <StarGlyph /> {totalStars}
-            <span className="tip">כוכבים שאספתי (עד 5 בכל תחנה)</span>
+          <span className="jb-stars tip-host"><StarGlyph /> {totalStars}<span className="tip">כוכבים שאספתי (עד 5 בכל תחנה)</span></span>
+          <span className="jb-stars tip-host hide-narrow"><GemGlyph /> {gemCount}<span className="tip">אבן חן על כל תחנה עם 5 כוכבים</span></span>
+          <span className={`jb-stars tip-host hide-narrow${flame.thisWeek >= WEEK_GOAL ? ' lit' : ''}`}>
+            <Flame lit={flame.thisWeek >= WEEK_GOAL} size={18} /> {Math.min(flame.thisWeek, WEEK_GOAL)}/{WEEK_GOAL}
+            <span className="tip">להבת התמדה: {WEEK_GOAL} ימי משחק בשבוע{flame.streak ? ` · ${flame.streak === 1 ? 'שבוע אחד' : `${flame.streak} שבועות`} ברצף` : ''}</span>
           </span>
-          <button className="icon-btn" onClick={() => setShelf(true)} aria-label="האותיות שלי" title="האותיות שלי"><IconSparkles size={19} /></button>
-          <button className="icon-btn" onClick={() => nav('/parents')} aria-label="להורים ולמורים" title="להורים ולמורים"><IconHeart size={18} /></button>
+          <button className="pill jb-pill show-narrow" onClick={() => setDrawer(true)}><IconSparkles size={15} /> אוצרות</button>
+          <button className="pill jb-pill" onClick={() => nav('/parents')}><IconHeart size={15} /> <span>להורים<span className="hide-narrow"> ולמורים</span></span></button>
           <button className="icon-btn" onClick={onLogout} aria-label="יציאה" title="יציאה"><IconLogOut size={18} /></button>
         </div>
       </header>
 
+      <aside className="journey-side">{panel}</aside>
+
       {cfg && units.length > 0 && (
-        <Board cfg={cfg} units={units} progress={progress} unlocked={unlocked} current={current?.id} me={<Pirate look={look} items={worn} size={40} />} friends={friends} />
+        <Board cfg={cfg} units={units} progress={progress} unlocked={unlocked} current={current?.id}
+          me={<Pirate look={look} items={worn} size={40} />} friends={friends} bottle={btl} />
       )}
 
       {current && (
@@ -75,11 +98,11 @@ export default function Journey({ session, progress, onLogout }: {
         </button>
       )}
 
-      {shelf && (
-        <div className="slide-menu-backdrop" onClick={() => setShelf(false)}>
+      {drawer && (
+        <div className="slide-menu-backdrop" onClick={() => setDrawer(false)}>
           <div className="shelf-modal pop-in" onClick={(e) => e.stopPropagation()}>
-            <button className="icon-btn shelf-close" onClick={() => setShelf(false)} aria-label="סגירה"><IconX size={18} /></button>
-            <SkillShelf progress={progress} units={units} always />
+            <button className="icon-btn shelf-close" onClick={() => setDrawer(false)} aria-label="סגירה"><IconX size={18} /></button>
+            {panel}
           </div>
         </div>
       )}
@@ -88,9 +111,75 @@ export default function Journey({ session, progress, onLogout }: {
   );
 }
 
-function Board({ cfg, units, progress, unlocked, current, me, friends }: {
+/** הפאנל: פרופיל + תגמולים + האותיות שלי */
+function RewardsPanel({ session, look, stars, gems, next, flame, goal, bottle, done, progress, units }: {
+  session: StudentSession; look: React.ReactNode; stars: number; gems: number; next: string;
+  flame: { thisWeek: number; streak: number }; goal: ClassGoal | null;
+  bottle: ReturnType<typeof findBottle>; done: number; progress: ProgressData; units: UnitMeta[];
+}) {
+  const certs = CERT_LEVELS.filter((n) => done >= n);
+  return (
+    <div className="rp">
+      <button className="rp-me" onClick={() => nav('/pirate')}>
+        {look}
+        <div>
+          <b>{session.nickname}</b>
+          <span>{next}</span>
+          <span className="rp-link">לארון השודד</span>
+        </div>
+      </button>
+
+      <div className="rp-row">
+        <div className="rp-stat"><StarGlyph /> <b>{stars}</b><span>כוכבים</span></div>
+        <div className="rp-stat"><GemGlyph size={18} /> <b>{gems}</b><span>אבני חן</span></div>
+      </div>
+
+      <div className="rp-card">
+        <div className="rp-flames">
+          {Array.from({ length: WEEK_GOAL }, (_, i) => <Flame key={i} lit={i < flame.thisWeek} size={30} />)}
+        </div>
+        <b>להבת התמדה</b>
+        <span>
+          {flame.thisWeek >= WEEK_GOAL ? 'עמדת ביעד השבוע!' : `עוד ${WEEK_GOAL - flame.thisWeek} ${WEEK_GOAL - flame.thisWeek === 1 ? 'יום' : 'ימים'} של משחק השבוע`}
+          {flame.streak > 0 ? ` · ${flame.streak === 1 ? 'שבוע אחד' : `${flame.streak} שבועות`} ברצף` : ''}
+        </span>
+      </div>
+
+      {goal && (
+        <div className="rp-card">
+          <b>היעד של {goal.name}</b>
+          <div className="rp-bar"><div style={{ width: `${Math.min(100, ((goal.stars % goal.step) / goal.step) * 100)}%` }} /></div>
+          <span>הכיתה אספה יחד {goal.stars} כוכבים · עוד {goal.goal - goal.stars} לאוצר הכיתתי{goal.treasures ? ` ה-${goal.treasures + 1}` : ''}</span>
+        </div>
+      )}
+
+      {bottle && (
+        <button className="rp-card rp-bottle" onClick={() => nav(`/unit/${bottle.unit.id}/${bottle.slide + 1}`)}>
+          <Bottle size={40} />
+          <span>הצליל <b dir="ltr">{bottle.skill}</b> קורא לך! תרגול קצר בתחנה {bottle.unit.n}</span>
+        </button>
+      )}
+
+      {certs.length > 0 && (
+        <div className="rp-card">
+          <b>תעודות קפטן</b>
+          <div className="rp-certs">
+            {certs.map((n) => (
+              <button key={n} className="pill" onClick={() => nav(`/certificate/${n}`)}><IconPrint size={14} /> {n} תחנות</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <SkillShelf progress={progress} units={units} always />
+    </div>
+  );
+}
+
+function Board({ cfg, units, progress, unlocked, current, me, friends, bottle }: {
   cfg: JourneyConfig; units: UnitMeta[]; progress: ProgressData;
   unlocked: (i: number) => boolean; current?: string; me: React.ReactNode; friends: Classmate[];
+  bottle: ReturnType<typeof findBottle>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
@@ -134,6 +223,9 @@ function Board({ cfg, units, progress, unlocked, current, me, friends }: {
   const nodeW = Math.max(62, Math.min(96, w * 0.14));
 
   return (
+    <div className="journey-wide" style={{ height: h || undefined }}>
+    {/* רקע רחב לצדדים — ממשיך את צבעי הסצנה כדי שהמפה לא תיראה חתוכה */}
+    <div className="journey-backdrop" aria-hidden="true"><SkyStars count={80} seed={5} /></div>
     <div ref={ref} className="journey-board" style={{ height: h || undefined }}>
       {w > 0 && (
         <>
@@ -161,6 +253,17 @@ function Board({ cfg, units, progress, unlocked, current, me, friends }: {
               </div>
             );
           })}
+          {/* בקבוק עם פתק ליד התחנה שבה יש צליל לתרגל */}
+          {bottle && (() => {
+            const i = units.findIndex((u) => u.id === bottle.unit.id);
+            return (
+              <button className="jbottle tip-host" style={{ left: pts[i].x + nodeW * 0.75, top: pts[i].y - nodeW * 0.2 }}
+                onClick={() => nav(`/unit/${bottle.unit.id}/${bottle.slide + 1}`)} aria-label={`הצליל ${bottle.skill} קורא לך`}>
+                <Bottle size={nodeW * 0.55} />
+                <span className="tip">הצליל <span dir="ltr">{bottle.skill}</span> קורא לך!</span>
+              </button>
+            );
+          })()}
           {/* סיום למעלה */}
           <div className="journey-finish" style={{ left: pts[pts.length - 1].x, top: pts[pts.length - 1].y - nodeW * 1.55 }}>
             <FinishStar size={nodeW * 0.9} lit={!!progress.positions[units[units.length - 1]?.id]?.completed} />
@@ -193,6 +296,7 @@ function Board({ cfg, units, progress, unlocked, current, me, friends }: {
           })}
         </>
       )}
+    </div>
     </div>
   );
 }

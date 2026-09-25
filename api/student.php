@@ -146,6 +146,26 @@ case 'look': {
     json_out(['ok' => true, 'look' => $clean]);
 }
 
+// יעד כיתתי משותף: סך הכוכבים (הטובים ביותר) של כל הכיתה מול יעד. שיתוף, לא תחרות.
+case 'class': {
+    $sid = require_student();
+    $db = db();
+    $st = $db->prepare('SELECT c.id, c.name FROM classes c JOIN students s ON s.class_id = c.id WHERE s.id = ?');
+    $st->execute([$sid]);
+    $cls = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$cls) json_err('כיתה לא נמצאה', 404);
+    $n = $db->prepare('SELECT COUNT(*) FROM students WHERE class_id = ?');
+    $n->execute([(int)$cls['id']]);
+    $students = (int)$n->fetchColumn();
+    $s = $db->prepare('SELECT COALESCE(SUM(p.stars), 0) FROM positions p JOIN students s ON s.id = p.student_id WHERE s.class_id = ?');
+    $s->execute([(int)$cls['id']]);
+    $stars = (int)$s->fetchColumn();
+    // יעד מדורג: כל 15 כוכבים לתלמיד בממוצע נפתח אוצר כיתתי (עד 6 אוצרות — 90 כוכבים לתלמיד)
+    $step = max(20, $students * 15);
+    $goal = (intdiv($stars, $step) + 1) * $step;
+    json_out(['name' => $cls['name'], 'students' => $students, 'stars' => $stars, 'goal' => $goal, 'step' => $step, 'treasures' => intdiv($stars, $step)]);
+}
+
 // חברים לכיתה על המפה — רק אם המורה הפעילה. שם פרטי + דמות + תחנה. בלי אימוג'י (הוא הסיסמה) ובלי ציונים.
 case 'classmates': {
     $sid = require_student();
