@@ -5,6 +5,7 @@ import Join from './views/Join';
 import StarMap from './views/StarMap';
 import Journey from './views/Journey';
 import PathEdit from './views/PathEdit';
+import Wardrobe from './views/Wardrobe';
 import PlayView from './views/PlayView';
 import Teacher from './views/Teacher';
 import Parents from './views/Parents';
@@ -65,6 +66,7 @@ export default function App() {
     const jump = parts[2] && /^\d+$/.test(parts[2]) ? Math.max(0, +parts[2] - 1) : undefined;
     return <PlayView key={parts.slice(1, 3).join('/')} unitId={parts[1]} jump={jump} session={session} progress={progress} onReported={refresh} />;
   }
+  if (route === 'pirate') return <Wardrobe session={session} progress={progress} onSaved={refresh} />;
   if (route === 'stars') return <StarMap session={session} progress={progress} onLogout={logout} />;
   return <Journey session={session} progress={progress} onLogout={logout} />;
 }

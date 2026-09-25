@@ -2,6 +2,7 @@
 // ומצב "אורח" (localStorage בלבד) כשמתרגלים בלי קוד כיתה.
 
 import { BASE } from './mediaPaths';
+import type { PirateLook } from '../data/pirates';
 
 const API = `${BASE}api`;
 
@@ -24,7 +25,13 @@ export interface ProgressData {
   slides: Record<string, SlideStat>;                           // "u3:5"
   skills: Record<string, SkillStat>;
   freeNav?: boolean;
+  /** חברים על המפה — המורה הפעילה לכיתה */
+  showFriends?: boolean;
+  /** דמות השודד (מוצגת לחברים; האימוג'י נשאר סודי) */
+  look?: PirateLook | null;
 }
+
+export interface Classmate { name: string; look: PirateLook | null; unit: string }
 
 export const emptyProgress = (): ProgressData => ({ positions: {}, slides: {}, skills: {} });
 
@@ -170,6 +177,25 @@ export async function reportVisit(s: StudentSession, unitId: string): Promise<vo
   await request('student.php?a=visit', { unitId }, isLocalSession(s) ? undefined : s.token).catch(() => {});
 }
 
+export async function saveLook(s: StudentSession, look: PirateLook): Promise<void> {
+  if (isLocalSession(s)) {
+    const p = loadGuest(s);
+    p.look = look;
+    saveGuest(s, p);
+    return;
+  }
+  await request('student.php?a=look', { look }, s.token);
+}
+
+export async function fetchClassmates(s: StudentSession): Promise<Classmate[]> {
+  if (isLocalSession(s)) return [];
+  try { return (await request<{ friends: Classmate[] }>('student.php?a=classmates', undefined, s.token)).friends; } catch { return []; }
+}
+
+export async function setClassFriends(t: TeacherSession, classId: number, on: boolean): Promise<void> {
+  await request('teacher.php?a=set_friends', { classId, on }, t.token);
+}
+
 export async function fetchPlays(): Promise<Record<string, number>> {
   try { return (await request<{ plays: Record<string, number> }>('student.php?a=plays')).plays; } catch { return {}; }
 }
@@ -211,7 +237,7 @@ export async function teacherLogin(email: string, password: string): Promise<Tea
   return r;
 }
 
-export interface ClassInfo { id: number; name: string; code: string; freeNav: boolean; students: number }
+export interface ClassInfo { id: number; name: string; code: string; freeNav: boolean; showFriends?: boolean; students: number }
 
 export async function fetchClasses(t: TeacherSession): Promise<ClassInfo[]> {
   return (await request<{ classes: ClassInfo[] }>('teacher.php?a=classes', undefined, t.token)).classes;

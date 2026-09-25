@@ -123,9 +123,55 @@ case 'position': {
 case 'progress': {
     $sid = require_student();
     touch_student($sid);
-    $fn = db()->prepare('SELECT c.free_nav FROM classes c JOIN students s ON s.class_id = c.id WHERE s.id = ?');
+    $fn = db()->prepare('SELECT c.free_nav, c.show_friends, s.look FROM classes c JOIN students s ON s.class_id = c.id WHERE s.id = ?');
     $fn->execute([$sid]);
-    json_out(student_progress($sid) + ['freeNav' => (bool)($fn->fetchColumn() ?: 0)]);
+    $r = $fn->fetch(PDO::FETCH_ASSOC) ?: [];
+    json_out(student_progress($sid) + [
+        'freeNav' => (bool)($r['free_nav'] ?? 0),
+        'showFriends' => (bool)($r['show_friends'] ?? 0),
+        'look' => ($r['look'] ?? '') !== '' ? json_decode($r['look'], true) : null,
+    ]);
+}
+
+// שמירת דמות השודד: {look: {base, items[]}}
+case 'look': {
+    $sid = require_student();
+    $look = body()['look'] ?? null;
+    if (!is_array($look)) json_err('דמות לא תקינה');
+    $clean = [
+        'base' => max(0, min(20, (int)($look['base'] ?? 0))),
+        'items' => array_values(array_slice(array_filter((array)($look['items'] ?? []), fn($x) => is_string($x) && preg_match('/^[a-z]{2,12}$/', $x)), 0, 8)),
+    ];
+    db()->prepare('UPDATE students SET look = ? WHERE id = ?')->execute([json_encode($clean), $sid]);
+    json_out(['ok' => true, 'look' => $clean]);
+}
+
+// חברים לכיתה על המפה — רק אם המורה הפעילה. שם פרטי + דמות + תחנה. בלי אימוג'י (הוא הסיסמה) ובלי ציונים.
+case 'classmates': {
+    $sid = require_student();
+    $db = db();
+    $st = $db->prepare('SELECT c.id, c.show_friends FROM classes c JOIN students s ON s.class_id = c.id WHERE s.id = ?');
+    $st->execute([$sid]);
+    $cls = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$cls || !(int)$cls['show_friends']) json_out(['enabled' => false, 'friends' => []]);
+    $st = $db->prepare('SELECT id, nickname, look FROM students WHERE class_id = ? AND id != ?');
+    $st->execute([(int)$cls['id'], $sid]);
+    $out = [];
+    $pos = $db->prepare('SELECT unit_id, completed, updated_at FROM positions WHERE student_id = ? ORDER BY updated_at DESC');
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $s) {
+        $pos->execute([(int)$s['id']]);
+        $rows = $pos->fetchAll(PDO::FETCH_ASSOC);
+        if (!$rows) continue;
+        // התחנה שבה נמצא/ת: האחרונה שלא הושלמה, אחרת האחרונה שנגעו בה
+        $open = array_values(array_filter($rows, fn($r) => !(int)$r['completed']));
+        $unit = ($open[0] ?? $rows[0])['unit_id'];
+        $out[] = [
+            'name' => $s['nickname'],
+            'look' => $s['look'] !== '' ? json_decode($s['look'], true) : null,
+            'unit' => $unit,
+        ];
+    }
+    json_out(['enabled' => true, 'friends' => $out]);
 }
 
 default:

@@ -13,6 +13,7 @@ switch ($a) {
     case 'classes':        json_out(['classes' => t_classes(require_teacher())]);
     case 'create_class':   json_out(t_create_class(require_teacher(), $b));
     case 'set_free':       json_out(t_set_free(require_teacher(), $b));
+    case 'set_friends':    json_out(t_set_friends(require_teacher(), $b));
     case 'rename_class':   json_out(t_rename_class(require_teacher(), $b));
     case 'delete_student': json_out(t_delete_student(require_teacher(), $b));
     case 'reset_student':  json_out(t_reset_student(require_teacher(), $b));

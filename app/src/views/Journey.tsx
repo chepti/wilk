@@ -10,6 +10,9 @@ import JourneyScene from '../ui/JourneyScene';
 import Footer from '../ui/Footer';
 import { unitState, SkillShelf } from './StarMap';
 import { IconLogOut, IconPlay, IconLock, IconHeart, IconSparkles, IconX } from '../ui/icons';
+import { fetchClassmates, type Classmate } from '../lib/api';
+import { DEFAULT_LOOK, nextItem, wearable, type PirateLook } from '../data/pirates';
+import Pirate from '../ui/Pirate';
 
 // מפת מסע אנכית: מתחילים למטה (אי האוצר) ומטפסים לכוכבים. כל תחנה = תיבת אוצר;
 // הושלמה → תיבה פתוחה עם אבני חן. מעל כל תחנה קשת של 5 כוכבים.
@@ -23,7 +26,9 @@ export default function Journey({ session, progress, onLogout }: {
   const [units, setUnits] = useState<UnitMeta[]>([]);
   const [cfg, setCfg] = useState<JourneyConfig | null>(null);
   const [shelf, setShelf] = useState(false);
+  const [friends, setFriends] = useState<Classmate[]>([]);
   useEffect(() => { loadCatalog().then(setUnits); loadJourney().then(setCfg); }, []);
+  useEffect(() => { if (progress.showFriends) fetchClassmates(session).then(setFriends); else setFriends([]); }, [progress.showFriends]);
 
   const free = progress.freeNav ?? session.freeNav ?? true;
   const unlocked = (i: number) => free || i === 0 || !!progress.positions[units[i - 1]?.id]?.completed || !!progress.positions[units[i]?.id];
@@ -32,15 +37,21 @@ export default function Journey({ session, progress, onLogout }: {
     .sort((a, b) => (progress.positions[b.id].at ?? '').localeCompare(progress.positions[a.id].at ?? ''))[0];
   const current = inProgress ?? units.find((u) => !progress.positions[u.id]?.completed);
   const totalStars = units.reduce((n, u) => n + (progress.positions[u.id] ? unitStars(u, progress) : 0), 0);
+  const look = progress.look ?? DEFAULT_LOOK;
+  const worn = wearable(look, totalStars);
+  const next = nextItem(totalStars);
 
   return (
     <div className="journey-page">
       <header className="journey-bar">
         <div className="jb-who">
-          <span className="tip-host jb-avatar">{session.emoji}<span className="tip">{avatarName(session.emoji)}</span></span>
+          <button className="jb-pirate tip-host" onClick={() => nav('/pirate')} aria-label="הדמות שלי">
+            <Pirate look={look} items={worn} size={40} />
+            <span className="tip">הדמות שלי — אפשר להלביש אותה באוצרות</span>
+          </button>
           <div>
             <b>{session.nickname}</b>
-            <span>{session.className ?? (session.token === 'guest' ? 'משחק חופשי' : 'תצוגת מורה')}</span>
+            <span className="jb-next">{next ? `עוד ${next.stars - totalStars} כוכבים ל${next.name}` : (session.className ?? 'משחק חופשי')}</span>
           </div>
         </div>
         <div className="jb-actions">
@@ -55,7 +66,7 @@ export default function Journey({ session, progress, onLogout }: {
       </header>
 
       {cfg && units.length > 0 && (
-        <Board cfg={cfg} units={units} progress={progress} unlocked={unlocked} current={current?.id} emoji={session.emoji} />
+        <Board cfg={cfg} units={units} progress={progress} unlocked={unlocked} current={current?.id} me={<Pirate look={look} items={worn} size={40} />} friends={friends} />
       )}
 
       {current && (
@@ -77,9 +88,9 @@ export default function Journey({ session, progress, onLogout }: {
   );
 }
 
-function Board({ cfg, units, progress, unlocked, current, emoji }: {
+function Board({ cfg, units, progress, unlocked, current, me, friends }: {
   cfg: JourneyConfig; units: UnitMeta[]; progress: ProgressData;
-  unlocked: (i: number) => boolean; current?: string; emoji: string;
+  unlocked: (i: number) => boolean; current?: string; me: React.ReactNode; friends: Classmate[];
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
@@ -97,16 +108,24 @@ function Board({ cfg, units, progress, unlocked, current, emoji }: {
   const pts = cfg.stations.map(P);
   const bg = bgUrl(cfg);
 
-  // גלילה לתחנה הנוכחית (או לתחתית) — המסע נטען מלמטה
-  const scrolled = useRef(false);
-  useEffect(() => {
-    if (!w || scrolled.current) return;
-    scrolled.current = true;
-    const i = Math.max(0, units.findIndex((u) => u.id === current));
-    const y = pts[i]?.y ?? h;
-    const top = (ref.current?.offsetTop ?? 0) + y - window.innerHeight * 0.6;
-    window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+  // המסע נטען מלמטה (תיבה 1), ואז מטפס בעדינות אל התחנה הנוכחית — רואים את הדרך שכבר עברנו
+  const atBottom = useRef(false);
+  const climbedTo = useRef<string | undefined>(undefined);
+  const yFor = (i: number) => (ref.current?.offsetTop ?? 0) + (pts[i]?.y ?? h) - window.innerHeight * 0.62;
+  useLayoutEffect(() => {
+    if (!w || atBottom.current) return;
+    atBottom.current = true;
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    window.scrollTo({ top: Math.max(0, yFor(0)), behavior: 'auto' });
   }, [w]);
+  useEffect(() => {
+    if (!w || !current || climbedTo.current === current) return;
+    climbedTo.current = current;
+    const i = units.findIndex((u) => u.id === current);
+    if (i <= 0) return;
+    const t = setTimeout(() => window.scrollTo({ top: Math.max(0, yFor(i)), behavior: 'smooth' }), 650);
+    return () => clearTimeout(t);
+  }, [w, current]);
 
   // שביל: עקומה חלקה בין התחנות; החלק שהושלם — זהב
   const pathD = useMemo(() => smoothPath(pts), [w, cfg]);
@@ -126,6 +145,22 @@ function Board({ cfg, units, progress, unlocked, current, emoji }: {
 
           {/* "מתחילים כאן!" — כמו בעמוד הישן */}
           <div className="journey-start" style={{ left: pts[0].x, top: pts[0].y + nodeW * 0.62 }}>מתחילים כאן!</div>
+          {/* חברים לכיתה (אם המורה הפעילה): דמות + שם פרטי ליד התחנה שבה הם נמצאים */}
+          {units.map((u, i) => {
+            const here = friends.filter((f) => f.unit === u.id);
+            if (!here.length) return null;
+            return (
+              <div key={`f-${u.id}`} className="jfriends" style={{ left: pts[i].x - nodeW * 0.55, top: pts[i].y }}>
+                {here.slice(0, 3).map((f, k) => (
+                  <span key={k} className="jfriend tip-host">
+                    <Pirate look={f.look ?? { base: 0, items: [] }} size={nodeW * 0.42} />
+                    <span className="tip">{f.name}</span>
+                  </span>
+                ))}
+                {here.length > 3 && <span className="jfriends-more tip-host">+{here.length - 3}<span className="tip">{here.slice(3).map((f) => f.name).join(', ')}</span></span>}
+              </div>
+            );
+          })}
           {/* סיום למעלה */}
           <div className="journey-finish" style={{ left: pts[pts.length - 1].x, top: pts[pts.length - 1].y - nodeW * 1.55 }}>
             <FinishStar size={nodeW * 0.9} lit={!!progress.positions[units[units.length - 1]?.id]?.completed} />
@@ -152,7 +187,7 @@ function Board({ cfg, units, progress, unlocked, current, emoji }: {
                 <span className="jnode-label" dir="ltr">{u.title}</span>
                 {st.kind === 'locked' && <span className="jnode-lock"><IconLock size={14} /></span>}
                 {st.kind === 'started' && <ProgressRing pct={st.pct} />}
-                {isCur && <span className="jnode-me" aria-hidden="true">{emoji}</span>}
+                {isCur && <span className="jnode-me" aria-hidden="true">{me}</span>}
               </button>
             );
           })}

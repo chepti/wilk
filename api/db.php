@@ -129,6 +129,8 @@ function db(): PDO {
     add_column($pdo, 'slide_results', 'quality', 'REAL');
     add_column($pdo, 'positions', 'stars', 'INTEGER NOT NULL DEFAULT 0');
     add_column($pdo, 'positions', 'visits', 'INTEGER NOT NULL DEFAULT 0');
+    add_column($pdo, 'students', 'look', "TEXT NOT NULL DEFAULT ''");          // דמות השודד (JSON) — מוצגת לחברים
+    add_column($pdo, 'classes', 'show_friends', 'INTEGER NOT NULL DEFAULT 0'); // חברים על המפה (המורה מחליטה)
     daily_backup($pdo);
     return $pdo;
 }

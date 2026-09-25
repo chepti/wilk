@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { nav } from '../App';
 import {
   loadTeacher, saveTeacher, teacherLogin, teacherRegister, fetchClasses, createClass, setClassFree,
-  fetchHeatmap, deleteStudent, teacherPreviewSession, type TeacherSession, type ClassInfo, type HeatmapStudent,
+  fetchHeatmap, deleteStudent, teacherPreviewSession, setClassFriends, type TeacherSession, type ClassInfo, type HeatmapStudent,
 } from '../lib/api';
 import { loadCatalog, mastery, SKILL_ORDER, type UnitMeta } from '../data/units';
 import { avatarName } from '../data/avatars';
@@ -156,6 +156,11 @@ function ClassView({ t, cls, onChange }: { t: TeacherSession; cls: ClassInfo; on
             <input type="checkbox" checked={cls.freeNav} onChange={async (e) => { await setClassFree(t, cls.id, e.target.checked); onChange(); }} />
             מסלול חופשי
             <span className="tip">מסומן: כל התחנות פתוחות. לא מסומן: כל תחנה נפתחת אחרי שמסיימים את הקודמת</span>
+          </label>
+          <label className="pill tip-host" style={{ cursor: 'pointer' }}>
+            <input type="checkbox" checked={!!cls.showFriends} onChange={async (e) => { await setClassFriends(t, cls.id, e.target.checked); onChange(); }} />
+            חברים על המפה
+            <span className="tip">מסומן: כל תלמיד רואה במפה את דמויות החברים לכיתה ליד התחנה שבה הם נמצאים (שם פרטי בלבד, בלי כוכבים וציונים). כבוי כברירת מחדל</span>
           </label>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>

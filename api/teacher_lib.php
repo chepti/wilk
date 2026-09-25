@@ -48,12 +48,21 @@ function class_row(array $r): array {
         'name' => $r['name'],
         'code' => $r['code'],
         'freeNav' => (bool)$r['free_nav'],
+        'showFriends' => (bool)($r['show_friends'] ?? 0),
         'students' => (int)($r['students'] ?? 0),
     ];
 }
 
+/** חברים על המפה: מפעילים / מכבים לכיתה (ברירת מחדל: כבוי — בלי תחרותיות) */
+function t_set_friends(int $tid, array $b): array {
+    $c = t_find_class($tid, $b);
+    $on = !empty($b['on']) ? 1 : 0;
+    db()->prepare('UPDATE classes SET show_friends = ? WHERE id = ?')->execute([$on, $c['id']]);
+    return ['ok' => true, 'classId' => (int)$c['id'], 'showFriends' => (bool)$on];
+}
+
 function t_classes(int $tid): array {
-    $st = db()->prepare('SELECT c.id, c.name, c.code, c.free_nav,
+    $st = db()->prepare('SELECT c.id, c.name, c.code, c.free_nav, c.show_friends,
             (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id) AS students
         FROM classes c WHERE c.teacher_id = ? ORDER BY c.id DESC');
     $st->execute([$tid]);
