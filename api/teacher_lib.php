@@ -53,7 +53,7 @@ function class_row(array $r): array {
     ];
 }
 
-/** חברים על המפה: מפעילים / מכבים לכיתה (ברירת מחדל: כבוי — בלי תחרותיות) */
+/** חברים על המפה: מפעילים / מכבים לכיתה (ברירת מחדל בכיתה חדשה: מופעל) */
 function t_set_friends(int $tid, array $b): array {
     $c = t_find_class($tid, $b);
     $on = !empty($b['on']) ? 1 : 0;
@@ -74,8 +74,9 @@ function t_create_class(int $tid, array $b): array {
     if ($name === '') json_err('חסר שם כיתה');
     $db = db();
     $code = gen_code($db);
-    $db->prepare('INSERT INTO classes (teacher_id, name, code) VALUES (?, ?, ?)')->execute([$tid, $name, $code]);
-    return ['id' => (int)$db->lastInsertId(), 'name' => $name, 'code' => $code, 'freeNav' => true, 'students' => 0];
+    // חברים על המפה — מופעל כברירת מחדל בכיתה חדשה (המורה יכולה לכבות)
+    $db->prepare('INSERT INTO classes (teacher_id, name, code, show_friends) VALUES (?, ?, ?, 1)')->execute([$tid, $name, $code]);
+    return ['id' => (int)$db->lastInsertId(), 'name' => $name, 'code' => $code, 'freeNav' => true, 'showFriends' => true, 'students' => 0];
 }
 
 /** איתור כיתה של המורה לפי id / קוד / חלק מהשם. בהתנגשות — רשימת מועמדים */

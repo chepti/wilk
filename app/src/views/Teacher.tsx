@@ -160,7 +160,7 @@ function ClassView({ t, cls, onChange }: { t: TeacherSession; cls: ClassInfo; on
           <label className="pill tip-host" style={{ cursor: 'pointer' }}>
             <input type="checkbox" checked={!!cls.showFriends} onChange={async (e) => { await setClassFriends(t, cls.id, e.target.checked); onChange(); }} />
             חברים על המפה
-            <span className="tip">מסומן: כל תלמיד רואה במפה את דמויות החברים לכיתה ליד התחנה שבה הם נמצאים (שם פרטי בלבד, בלי כוכבים וציונים). כבוי כברירת מחדל</span>
+            <span className="tip">מסומן: כל תלמיד רואה במפה את דמויות החברים לכיתה ליד התחנה שבה הם נמצאים (שם פרטי בלבד, בלי כוכבים וציונים). אפשר לכבות אם לא רוצים תחרותיות</span>
           </label>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
