@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { nav } from '../App';
 import type { StudentSession, ProgressData, ClassGoal } from '../lib/api';
-import { fetchClassmates, fetchClassGoal, type Classmate } from '../lib/api';
+import { fetchClassmates, fetchClassGoal, setMapPref, type Classmate } from '../lib/api';
 import { loadCatalog, type UnitMeta } from '../data/units';
 import { loadJourney, bgUrl, type JourneyConfig, type Pt } from '../data/journey';
 import { unitStars } from '../data/stars';
@@ -11,7 +11,7 @@ import JourneyScene from '../ui/JourneyScene';
 import SkyStars from '../ui/Sky';
 import Footer from '../ui/Footer';
 import { unitState, SkillShelf } from './StarMap';
-import { IconLogOut, IconPlay, IconLock, IconHeart, IconSparkles, IconX, IconPrint } from '../ui/icons';
+import { IconLogOut, IconPlay, IconLock, IconHeart, IconSparkles, IconX, IconPrint, IconGrid } from '../ui/icons';
 import { DEFAULT_LOOK, nextItem, wearable } from '../data/pirates';
 import Pirate from '../ui/Pirate';
 import { GemGlyph, Flame, Bottle } from '../ui/RewardIcons';
@@ -80,6 +80,10 @@ export default function Journey({ session, progress, onLogout }: {
             <span className="tip">להבת התמדה: {WEEK_GOAL} ימי משחק בשבוע{flame.streak ? ` · ${flame.streak === 1 ? 'שבוע אחד' : `${flame.streak} שבועות`} ברצף` : ''}</span>
           </span>
           <button className="pill jb-pill show-narrow" onClick={() => setDrawer(true)}><IconSparkles size={15} /> אוצרות</button>
+          <button className="pill jb-pill tip-host hide-narrow" onClick={() => { setMapPref(session, 'stars'); window.scrollTo(0, 0); }}>
+            <IconGrid size={15} /> מפה פשוטה
+            <span className="tip">מעבר למפה הפשוטה — אפשר לחזור למסע בכל רגע</span>
+          </button>
           <button className="pill jb-pill" onClick={() => nav('/parents')}><IconHeart size={15} /> <span>להורים<span className="hide-narrow"> ולמורים</span></span></button>
           <button className="icon-btn" onClick={onLogout} aria-label="יציאה" title="יציאה"><IconLogOut size={18} /></button>
         </div>
@@ -172,6 +176,10 @@ function RewardsPanel({ session, look, stars, gems, next, flame, goal, bottle, d
       )}
 
       <SkillShelf progress={progress} units={units} always />
+
+      <button className="pill jb-pill rp-switch" onClick={() => { setMapPref(session, 'stars'); window.scrollTo(0, 0); }}>
+        <IconGrid size={14} /> מעבר למפה פשוטה
+      </button>
     </div>
   );
 }

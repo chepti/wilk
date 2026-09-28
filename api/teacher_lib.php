@@ -49,8 +49,17 @@ function class_row(array $r): array {
         'code' => $r['code'],
         'freeNav' => (bool)$r['free_nav'],
         'showFriends' => (bool)($r['show_friends'] ?? 0),
+        'mapStyle' => ($r['map_style'] ?? 'journey') === 'stars' ? 'stars' : 'journey',
         'students' => (int)($r['students'] ?? 0),
     ];
+}
+
+/** חוויית המפה של הכיתה: journey (מסע הרפתקה) / stars (מפה פשוטה). התלמיד יכול להחליף אצלו */
+function t_set_map_style(int $tid, array $b): array {
+    $c = t_find_class($tid, $b);
+    $style = ($b['style'] ?? '') === 'stars' ? 'stars' : 'journey';
+    db()->prepare('UPDATE classes SET map_style = ? WHERE id = ?')->execute([$style, $c['id']]);
+    return ['ok' => true, 'classId' => (int)$c['id'], 'mapStyle' => $style];
 }
 
 /** חברים על המפה: מפעילים / מכבים לכיתה (ברירת מחדל בכיתה חדשה: מופעל) */
@@ -62,7 +71,7 @@ function t_set_friends(int $tid, array $b): array {
 }
 
 function t_classes(int $tid): array {
-    $st = db()->prepare('SELECT c.id, c.name, c.code, c.free_nav, c.show_friends,
+    $st = db()->prepare('SELECT c.id, c.name, c.code, c.free_nav, c.show_friends, c.map_style,
             (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id) AS students
         FROM classes c WHERE c.teacher_id = ? ORDER BY c.id DESC');
     $st->execute([$tid]);

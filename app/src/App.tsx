@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { loadSession, saveSession, fetchProgress, emptyProgress, type StudentSession, type ProgressData } from './lib/api';
+import { loadSession, saveSession, fetchProgress, emptyProgress, mapPref, type StudentSession, type ProgressData } from './lib/api';
 import Landing from './views/Landing';
 import Join from './views/Join';
 import StarMap from './views/StarMap';
@@ -51,6 +51,14 @@ export default function App() {
     return () => window.removeEventListener('wilk-session', sync);
   }, []);
 
+  // החלפת מפה (מסע / פשוטה) — מציירים מחדש
+  const [, setPrefTick] = useState(0);
+  useEffect(() => {
+    const fn = () => setPrefTick((t) => t + 1);
+    window.addEventListener('wilk-mappref', fn);
+    return () => window.removeEventListener('wilk-mappref', fn);
+  }, []);
+
   const logout = () => { saveSession(null); setSession(null); setProgress(emptyProgress()); nav('/'); };
 
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -69,6 +77,8 @@ export default function App() {
   }
   if (route === 'certificate') return <Certificate level={Number(parts[1]) || 6} session={session} progress={progress} />;
   if (route === 'pirate') return <Wardrobe session={session} progress={progress} onSaved={refresh} />;
-  if (route === 'stars') return <StarMap session={session} progress={progress} onLogout={logout} />;
+  // מפה: העדפת התלמיד גוברת על ברירת המחדל של הכיתה (ברירת מחדל כללית: מסע הרפתקה)
+  const style = route === 'stars' ? 'stars' : mapPref(session) ?? progress.mapStyle ?? 'journey';
+  if (style === 'stars') return <StarMap session={session} progress={progress} onLogout={logout} />;
   return <Journey session={session} progress={progress} onLogout={logout} />;
 }

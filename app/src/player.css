@@ -337,6 +337,15 @@ img.stage-fill { pointer-events: none; }
 .jbottle { position: absolute; transform: translate(-50%, -50%); background: none; border: none; padding: 0; z-index: 6; animation: bob 2.6s ease-in-out infinite; cursor: pointer; }
 @keyframes bob { 0%, 100% { transform: translate(-50%, -50%) rotate(-6deg); } 50% { transform: translate(-50%, -62%) rotate(6deg); } }
 
+/* ── טוען כוכבי ── */
+.star-loader { display: flex; flex-direction: column; align-items: center; gap: 10px; color: #fff; font-weight: 700; opacity: 0.95; }
+.star-loader svg { overflow: visible; }
+.sl-orbit { transform-origin: 60px 60px; animation: sl-spin 3.2s linear infinite; }
+.sl-core { transform-origin: 60px 58px; animation: sl-pulse 1.3s ease-in-out infinite; }
+@keyframes sl-spin { to { transform: rotate(360deg); } }
+@keyframes sl-pulse { 0%, 100% { transform: scale(0.92); } 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .sl-orbit, .sl-core { animation: none; } }
+
 /* ── תעודת קפטן ── */
 .cert-page { min-height: 100vh; background: #eef1f8; padding: 16px; }
 .cert-tools { display: flex; justify-content: space-between; align-items: center; gap: 10px; max-width: 900px; margin: 0 auto 14px; flex-wrap: wrap; }
@@ -439,3 +448,5 @@ img.stage-fill { pointer-events: none; }
 .res-pages a { font-size: 12.5px; padding: 4px 10px; }
 .hm-del { border: none; background: none; color: #cbd5e1; margin-right: 6px; padding: 2px; border-radius: 6px; }
 .hm-del:hover { color: var(--red); background: var(--red-soft); }
+
+.rp-switch { align-self: center; margin-top: 2px; }

@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { nav } from '../App';
-import type { StudentSession, ProgressData } from '../lib/api';
+import { setMapPref, type StudentSession, type ProgressData } from '../lib/api';
 import { loadCatalog, mastery, SKILL_ORDER, type UnitMeta } from '../data/units';
 import SkyStars from '../ui/Sky';
 import Footer from '../ui/Footer';
@@ -8,7 +8,10 @@ import { IconLogOut, IconPlay, IconLock, IconCheck } from '../ui/icons';
 import { avatarName } from '../data/avatars';
 import { unitStars, skillLevel } from '../data/stars';
 import StarRow from '../ui/StarRow';
-import { IconHeart } from '../ui/icons';
+import { IconHeart, IconSparkles } from '../ui/icons';
+import Pirate from '../ui/Pirate';
+import { DEFAULT_LOOK, wearable } from '../data/pirates';
+import { gems as countGems } from '../data/rewards';
 
 /** מצב יחידה לתצוגה */
 export function unitState(u: UnitMeta, p: ProgressData, unlocked: boolean) {
@@ -35,22 +38,27 @@ export default function StarMap({ session, progress, onLogout }: {
   const nextUnit = inProgress ?? units.find((u) => !progress.positions[u.id]?.completed);
 
   const doneCount = units.filter((u) => progress.positions[u.id]?.completed).length;
+  const totalStars = units.reduce((n, u) => n + (progress.positions[u.id] ? unitStars(u, progress) : 0), 0);
 
   return (
     <div className="night-sky">
       <SkyStars count={90} seed={11} />
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span className="tip-host" style={{ fontSize: 34 }}>
-            {session.emoji}
-            <span className="tip">{avatarName(session.emoji)}</span>
-          </span>
+          <button className="jb-pirate tip-host" onClick={() => nav('/pirate')} aria-label="הדמות שלי">
+            <Pirate look={progress.look ?? DEFAULT_LOOK} items={wearable(progress.look ?? DEFAULT_LOOK, totalStars, countGems(units, progress))} size={42} />
+            <span className="tip">הדמות שלי</span>
+          </button>
           <div>
             <div style={{ fontWeight: 800, fontSize: 19 }}>{session.nickname}</div>
             <div style={{ fontSize: 13, opacity: 0.75 }}>{session.className ?? (session.token === 'guest' ? 'משחק חופשי' : 'תצוגת מורה')}</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button className="pill tip-host" onClick={() => setMapPref(session, 'journey')} style={{ background: 'rgba(255,201,60,0.18)', color: '#fff', borderColor: 'rgba(255,201,60,0.6)' }}>
+            <IconSparkles size={14} /> מסע הרפתקה
+            <span className="tip">מעבר למפת המסע עם תיבות האוצר</span>
+          </button>
           <button className="pill tip-host" onClick={() => nav('/parents')} style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', borderColor: 'rgba(255,255,255,0.35)' }}>
             <IconHeart size={14} /> להורים ולמורים
             <span className="tip">דוח התקדמות, החוברת להדפסה ועזרים</span>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { nav } from '../App';
 import {
   loadTeacher, saveTeacher, teacherLogin, teacherRegister, fetchClasses, createClass, setClassFree,
-  fetchHeatmap, deleteStudent, teacherPreviewSession, setClassFriends, type TeacherSession, type ClassInfo, type HeatmapStudent,
+  fetchHeatmap, deleteStudent, teacherPreviewSession, setClassFriends, setClassMapStyle, type TeacherSession, type ClassInfo, type HeatmapStudent,
 } from '../lib/api';
 import { loadCatalog, mastery, SKILL_ORDER, type UnitMeta } from '../data/units';
 import { avatarName } from '../data/avatars';
@@ -161,6 +161,18 @@ function ClassView({ t, cls, onChange }: { t: TeacherSession; cls: ClassInfo; on
             <input type="checkbox" checked={!!cls.showFriends} onChange={async (e) => { await setClassFriends(t, cls.id, e.target.checked); onChange(); }} />
             חברים על המפה
             <span className="tip">מסומן: כל תלמיד רואה במפה את דמויות החברים לכיתה ליד התחנה שבה הם נמצאים (שם פרטי בלבד, בלי כוכבים וציונים). אפשר לכבות אם לא רוצים תחרותיות</span>
+          </label>
+          <label className="pill tip-host" style={{ cursor: 'pointer' }}>
+            מפה:
+            <select
+              value={cls.mapStyle ?? 'journey'}
+              onChange={async (e) => { await setClassMapStyle(t, cls.id, e.target.value as 'journey' | 'stars'); onChange(); }}
+              style={{ border: 'none', background: 'transparent', font: 'inherit', color: 'inherit', cursor: 'pointer' }}
+            >
+              <option value="journey">מסע הרפתקה</option>
+              <option value="stars">מפה פשוטה</option>
+            </select>
+            <span className="tip">חוויית ברירת המחדל של הכיתה. כל תלמיד יכול להחליף אצלו בכפתור במפה</span>
           </label>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>

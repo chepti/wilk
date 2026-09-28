@@ -6,6 +6,7 @@ import { reportPosition, reportResult, reportVisit } from '../lib/api';
 import { STAR_KINDS, starsFor, unitQuality, weakSlides } from '../data/stars';
 import { BOOKLET_PDF, BOOKLET_PAGE, TEXTS_PDF, TEXTS_PAGE, FINALE, pdfPage } from '../data/resources';
 import StarRow from '../ui/StarRow';
+import StarLoader from '../ui/StarLoader';
 import { loadUnit, loadCatalog, SCORED_KINDS, type UnitMeta } from '../data/units';
 import { loadThemes } from '../engine/theme';
 import type { Instructions, UnitContent } from '../engine/types';
@@ -59,7 +60,7 @@ export default function PlayView({ unitId, jump, session, progress, onReported }
   const resumeAt = jump ?? saved;
 
   if (err) return <Centered><p>{err}</p><button className="btn star" onClick={() => nav('/map')}>למפה</button></Centered>;
-  if (!unit) return <Centered><div className="loader" /></Centered>;
+  if (!unit) return <Centered><StarLoader /></Centered>;
 
   if (done) {
     const nextUnit = catalog.find((u) => u.n === unit.n + 1);
@@ -79,7 +80,7 @@ export default function PlayView({ unitId, jump, session, progress, onReported }
     // נכנסו מהמפה (הייתה נגיעה בדף) — פותחים ישר את הפעילות, ממשיכים מהשקף שבו עצרו.
     // רק כשהדף נפתח בלי שום נגיעה (קישור / רענון) צריך לחיצה אחת כדי שהדפדפן יתיר שמע.
     const activated = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive ?? true;
-    if (activated) { queueMicrotask(begin); return <Centered><div className="loader" /></Centered>; }
+    if (activated) { queueMicrotask(begin); return <Centered><StarLoader /></Centered>; }
     return (
       <div className="night-sky" style={{ alignItems: 'center', justifyContent: 'center', gap: 14 }}>
         <SkyStars seed={unit.n} />

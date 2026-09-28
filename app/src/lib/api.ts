@@ -31,7 +31,11 @@ export interface ProgressData {
   look?: PirateLook | null;
   /** ימי עבודה (YYYY-MM-DD) — ללהבת ההתמדה */
   days?: string[];
+  /** חוויית המפה שהמורה בחרה לכיתה */
+  mapStyle?: MapStyle;
 }
+
+export type MapStyle = 'journey' | 'stars';
 
 export interface ClassGoal { name: string; students: number; stars: number; goal: number; step: number; treasures: number }
 
@@ -248,7 +252,25 @@ export async function teacherLogin(email: string, password: string): Promise<Tea
   return r;
 }
 
-export interface ClassInfo { id: number; name: string; code: string; freeNav: boolean; showFriends?: boolean; students: number }
+export interface ClassInfo { id: number; name: string; code: string; freeNav: boolean; showFriends?: boolean; mapStyle?: MapStyle; students: number }
+
+export async function setClassMapStyle(t: TeacherSession, classId: number, style: MapStyle): Promise<void> {
+  await request('teacher.php?a=set_map_style', { classId, style }, t.token);
+}
+
+// ── העדפת מפה של התלמיד (גוברת על ברירת המחדל של הכיתה) — נשמרת במכשיר ──
+
+const prefKey = (s: StudentSession) => `wilk_map_${s.nickname}_${s.emoji}`;
+
+export function mapPref(s: StudentSession): MapStyle | null {
+  const v = safeGet(prefKey(s));
+  return v === 'stars' || v === 'journey' ? v : null;
+}
+
+export function setMapPref(s: StudentSession, style: MapStyle): void {
+  safeSet(prefKey(s), style);
+  window.dispatchEvent(new Event('wilk-mappref'));
+}
 
 export async function fetchClasses(t: TeacherSession): Promise<ClassInfo[]> {
   return (await request<{ classes: ClassInfo[] }>('teacher.php?a=classes', undefined, t.token)).classes;
