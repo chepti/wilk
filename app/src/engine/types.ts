@@ -144,6 +144,8 @@ export interface UnitContent {
   plays: number;
   settings: { direction: 'ltr' | 'rtl'; scoring: boolean; dragAssist: boolean };
   slides: Slide[];
+  /** סדר ההצגה (אינדקסים למערך slides) — ראו playOrder */
+  order?: number[];
   sizes: Record<string, [number, number]>;
 }
 

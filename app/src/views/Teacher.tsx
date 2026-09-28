@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { nav } from '../App';
 import {
   loadTeacher, saveTeacher, teacherLogin, teacherRegister, fetchClasses, createClass, setClassFree,
-  fetchHeatmap, deleteStudent, teacherPreviewSession, setClassFriends, setClassMapStyle, type TeacherSession, type ClassInfo, type HeatmapStudent,
+  fetchHeatmap, deleteStudent, teacherPreviewSession, teacherMe, setClassFriends, setClassMapStyle, type TeacherSession, type ClassInfo, type HeatmapStudent,
 } from '../lib/api';
 import { loadCatalog, mastery, SKILL_ORDER, type UnitMeta } from '../data/units';
 import { avatarName } from '../data/avatars';
@@ -13,7 +13,7 @@ import PlaysChart from '../ui/PlaysChart';
 import { fetchPlays } from '../lib/api';
 import { skillLevel, unitQuality } from '../data/stars';
 import Footer from '../ui/Footer';
-import { IconLogOut, IconPlus, IconCopy, IconEye, IconRefresh, IconTrash, IconUsers, IconGrid, IconArrowRight, IconCheck } from '../ui/icons';
+import { IconLogOut, IconPlus, IconCopy, IconEye, IconRefresh, IconTrash, IconUsers, IconGrid, IconArrowRight, IconCheck, IconPen } from '../ui/icons';
 
 /** כניסות לכל תחנה בכל האתר (לא רק בכיתה) */
 function SitePlays() {
@@ -84,6 +84,8 @@ function Dashboard({ t, onOut }: { t: TeacherSession; onOut: () => void }) {
     }
   };
   useEffect(() => { reload(); }, []);
+  const [strokeAdmin, setStrokeAdmin] = useState(false);
+  useEffect(() => { teacherMe(t).then((r) => setStrokeAdmin(r.strokeAdmin)).catch(() => {}); }, []);
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +103,7 @@ function Dashboard({ t, onOut }: { t: TeacherSession; onOut: () => void }) {
       <header className="teacher-bar">
         <div><b>{t.name}</b> <span style={{ color: 'var(--ink-soft)', fontSize: 14 }}>· English through the Stars</span></div>
         <div style={{ display: 'flex', gap: 8 }}>
+          {strokeAdmin && <button className="pill" onClick={() => nav('/trace-edit')}><IconPen size={15} /> מסלולי כתיבה</button>}
           <button className="pill" onClick={() => { teacherPreviewSession(); nav('/map'); }}><IconEye size={15} /> לשחק כמו תלמיד</button>
           <button className="pill" onClick={onOut}><IconLogOut size={15} /> יציאה</button>
         </div>

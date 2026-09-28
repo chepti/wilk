@@ -252,6 +252,22 @@ export async function teacherLogin(email: string, password: string): Promise<Tea
   return r;
 }
 
+// ── מסלולי כתיבה (שקפי TRACING) ──
+
+export type StrokeMap = Record<string, [number, number][][]>;
+
+export async function fetchStrokes(): Promise<StrokeMap> {
+  return (await request<{ strokes: StrokeMap }>('teacher.php?a=strokes')).strokes ?? {};
+}
+
+export async function saveStrokes(t: TeacherSession, glyph: string, strokes: [number, number][][]): Promise<void> {
+  await request('teacher.php?a=save_strokes', { glyph, strokes }, t.token);
+}
+
+export async function teacherMe(t: TeacherSession): Promise<{ strokeAdmin: boolean }> {
+  return request('teacher.php?a=me', undefined, t.token);
+}
+
 export interface ClassInfo { id: number; name: string; code: string; freeNav: boolean; showFriends?: boolean; mapStyle?: MapStyle; students: number }
 
 export async function setClassMapStyle(t: TeacherSession, classId: number, style: MapStyle): Promise<void> {

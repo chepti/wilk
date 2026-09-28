@@ -450,3 +450,40 @@ img.stage-fill { pointer-events: none; }
 .hm-del:hover { color: var(--red); background: var(--red-soft); }
 
 .rp-switch { align-self: center; margin-top: 2px; }
+
+/* ── שקף TRACING (קואורדינטות במה 1920×1080) ── */
+.trace-slide { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 44px; font-family: 'Varela Round', system-ui, sans-serif; }
+.trace-title { margin: 0 0 26px; font-size: 64px; color: #24306b; background: rgba(255, 255, 255, 0.88); padding: 10px 44px; border-radius: 999px; box-shadow: 0 6px 20px rgba(20, 30, 80, 0.12); }
+.trace-title b { font-family: WilkTrace, 'Fredoka One', sans-serif; color: #3346a8; margin-inline-start: 14px; }
+.trace-row { display: flex; gap: 110px; }
+.trace-col { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.trace-label { font-size: 34px; font-weight: 700; color: #24306b; background: rgba(255, 255, 255, 0.8); padding: 4px 26px; border-radius: 999px; }
+.trace-box { position: relative; width: 620px; height: 620px; border-radius: 40px; background: #fbfcff; border: 4px solid #c9d3f5; box-shadow: 0 10px 30px rgba(20, 30, 80, 0.16); opacity: 0.55; transition: opacity 0.3s, box-shadow 0.3s, border-color 0.3s; touch-action: none; overflow: hidden; }
+.trace-box.on { opacity: 1; border-color: #6f86d6; box-shadow: 0 0 0 10px rgba(111, 134, 214, 0.25), 0 14px 36px rgba(20, 30, 80, 0.2); }
+.trace-box.done { opacity: 1; border-color: #34c26a; }
+.trace-box canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.trace-box .trace-ink { cursor: crosshair; touch-action: none; }
+.trace-box .trace-demo { pointer-events: none; }
+.trace-done { position: absolute; top: 18px; right: 18px; width: 96px; height: 96px; border-radius: 999px; background: #22a95a; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); }
+.trace-hint { margin-top: 22px; min-height: 52px; font-size: 36px; font-weight: 700; color: #24306b; background: rgba(255, 255, 255, 0.85); padding: 6px 30px; border-radius: 999px; }
+.trace-actions { display: flex; gap: 22px; margin-top: 18px; }
+.trace-actions .pill { font-size: 30px; padding: 14px 34px; gap: 12px; display: inline-flex; align-items: center; cursor: pointer; }
+.trace-actions .pill:disabled { opacity: 0.45; cursor: default; }
+
+/* ── עורך מסלולי כתיבה ── */
+.te-wrap { max-width: 980px; margin: 0 auto; padding: 18px 16px 50px; color: var(--ink); }
+.te-letters { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 12px 0 16px; }
+.te-glyph { position: relative; width: 44px; height: 44px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; font: 600 26px WilkTrace, sans-serif; cursor: pointer; color: var(--ink); }
+.te-glyph.cur { border: 3px solid var(--sky, #6f86d6); background: #eef2ff; }
+.te-glyph .te-ok { position: absolute; top: -6px; right: -6px; width: 17px; height: 17px; border-radius: 999px; background: #22a95a; color: #fff; display: flex; align-items: center; justify-content: center; }
+.te-main { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; align-items: flex-start; }
+.te-canvas { width: min(92vw, 440px); aspect-ratio: 1; border-radius: 26px; background: #fbfcff; border: 3px solid #c9d3f5; box-shadow: 0 8px 26px rgba(20, 30, 80, 0.14); touch-action: none; cursor: crosshair; display: block; }
+.te-side { display: flex; flex-direction: column; gap: 10px; width: min(92vw, 340px); }
+.te-side .pill, .te-side .btn { justify-content: center; }
+.te-msg { font-weight: 700; color: #2f7a4b; min-height: 22px; }
+.te-msg.err { color: var(--red, #d33); }
+.te-help { font-size: 14.5px; line-height: 1.65; color: var(--ink-soft); }
+.te-try { width: 100%; }
+.te-try .trace-box { width: 100%; height: auto; aspect-ratio: 1; border-radius: 26px; opacity: 1; }
+.te-try .trace-done { width: 56px; height: 56px; top: 10px; right: 10px; }
+.te-try .trace-done svg { width: 34px; height: 34px; }

@@ -13,6 +13,13 @@ export interface UnitMeta {
   slides: number;
   kinds: string[];
   jigziPlays?: number;
+  /** שקפי כתיבה: האות ומיקומה במערך השקפים */
+  traces?: { letter: string; idx: number }[];
+}
+
+/** סדר ההצגה: שקפי הכתיבה נוספו בסוף המערך (כדי לא להזיז תוצאות שמורות) ומוצגים אחרי שקף ההיכרות */
+export function playOrder(u: { slides: unknown[]; order?: number[] }): number[] {
+  return u.order?.length === u.slides.length ? u.order : u.slides.map((_, i) => i);
 }
 
 let catalog: Promise<UnitMeta[]> | null = null;

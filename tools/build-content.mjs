@@ -66,8 +66,42 @@ for (const f of jigFiles) {
     const kind = Object.keys(body)[0];
     return { kind, content: strip(body[kind].content) };
   });
+  // שקף TRACING אחרי כל שקף היכרות עם אות ("הכירו את האות X… כתבו את האות הגדולה והקטנה").
+  // נוסף בסוף המערך (תוצאות שמורות לפי אינדקס לא זזות) ו-order קובע שיוצג מיד אחרי ההיכרות.
+  const order = slides.map((_, i) => i);
+  const traces = [];
+  slides.slice().forEach((s, i) => {
+    if (s.kind !== 'tappingBoard') return;
+    const j = JSON.stringify(s.content);
+    const m = j.match(/(?:הכירו|תרגלו)[^"]{0,30}האות ([A-Za-z])/);
+    if (!m || !/כתבו את האות/.test(j)) return;
+    const letter = m[1].toUpperCase();
+    const b = s.content.base;
+    // הצליל: האזור הלחיץ שעל האות הגדולה (הקרוב ביותר לטקסט האות)
+    const txt = b.stickers.map((x) => x.Text).filter(Boolean).find((t) => {
+      try { return JSON.parse(t.value).content.some((p) => p.children?.some((c) => c.text?.trim().toUpperCase() === letter)); } catch { return false; }
+    });
+    const [lx, ly] = txt ? [0.5 + txt.transform.translation[0], 0.5 + txt.transform.translation[1]] : [0.25, 0.28];
+    const near = (s.content.traces ?? []).filter((t) => t.audio).map((t) => {
+      const [x, y] = t.transform.translation;
+      const e = t.shape.Ellipse ?? [0, 0];
+      return { t, d: Math.hypot(x + e[0] - lx, y + e[1] - ly) };
+    }).sort((a, z) => a.d - z.d)[0];
+    const idx = slides.length;
+    slides.push({
+      kind: 'trace',
+      content: {
+        letter,
+        sound: near?.t.audio ?? null,
+        base: { theme: b.theme, backgrounds: b.backgrounds, instructions: null, feedback: null },
+      },
+    });
+    order.splice(order.indexOf(i) + 1, 0, idx);
+    traces.push({ letter, idx });
+  });
   walkMedia(slides, images, audio, rw);
   units.push({
+    order, traces,
     id: `u${n}`, n, jigId: jig.id,
     // "WILK #4 f,m" → "f · m"
     title: name.replace(/^WILK\s*#\s*\d+:?\s*/, '').split(/[,\s]+/).filter(Boolean).join(' · '),
@@ -130,10 +164,11 @@ for (const u of units) {
 const catalog = units.map((u) => ({
   id: u.id, n: u.n, title: u.title, skills: u.skills, slides: u.slides.length,
   kinds: u.slides.map((s) => s.kind),
+  traces: u.traces,
   jigziPlays: u.plays, // כניסות בזמן Jigzi (2023–2026)
 }));
 fs.writeFileSync(path.join(OUT_CONTENT, 'units.json'), JSON.stringify(catalog));
-fs.writeFileSync(path.join(ROOT, 'api', 'units.json'), JSON.stringify(catalog.map(({ kinds, ...c }) => c), null, 1));
+fs.writeFileSync(path.join(ROOT, 'api', 'units.json'), JSON.stringify(catalog.map(({ kinds, traces, ...c }) => c), null, 1));
 
 const bytes = fs.readdirSync(OUT_MEDIA).reduce((s, f) => s + fs.statSync(path.join(OUT_MEDIA, f)).size, 0);
 console.log(`units ${units.length}, slides ${units.reduce((s, u) => s + u.slides.length, 0)}, images ${images.size} (rw ${rw.size}), audio ${audio.size} (missing ${missingAudio}), media ${(bytes / 1e6).toFixed(1)} MB`);

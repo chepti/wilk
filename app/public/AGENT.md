@@ -12,7 +12,7 @@ API base: https://chepti.com/wilk/api/
    It returns per class: code, and per student: units done, where they stopped ("u3#5" = unit 3 slide 5),
    and their three weakest sounds with mastery 0–1 (first-try success rate).
 4. To change things, POST ?action=ops with {"ops":[{"op":"create_class","name":"ג׳2"}, ...]}.
-   Available ops: create_class, rename_class, set_free, heatmap, delete_student, reset_student.
+   Available ops: create_class, rename_class, set_free, set_friends, set_map_style, heatmap, delete_student, reset_student, save_strokes (content admin only — letter writing paths for the TRACING slides; read them publicly at GET api/teacher.php?a=strokes).
    Refer to classes with "match" (6-digit code or part of the name) and students with "student" (nickname).
    If a match is ambiguous you get HTTP 409 / ok:false with "candidates" — ask the teacher which one.
 5. Never delete or reset a student without the teacher's explicit confirmation.

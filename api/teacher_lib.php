@@ -42,6 +42,51 @@ function t_login(array $b): array {
     return ['token' => make_token('t', (int)$t['id']), 'name' => $t['name'], 'email' => $email];
 }
 
+// ── מסלולי כתיבה (שקפי TRACING) — מוקלטים בעורך #/trace-edit ──
+// קריאה פתוחה לכולם; שמירה רק למורה-מנהלת (לפי אימייל).
+const STROKE_ADMINS = ['chepti@gmail.com'];
+
+function strokes_file(): string { return data_dir() . '/strokes.json'; }
+
+function t_strokes(): array {
+    $f = strokes_file();
+    $d = is_file($f) ? json_decode((string)file_get_contents($f), true) : null;
+    return ['strokes' => is_array($d) ? (object)$d : new stdClass()];
+}
+
+function t_is_stroke_admin(int $tid): bool {
+    $st = db()->prepare('SELECT email FROM teachers WHERE id = ?');
+    $st->execute([$tid]);
+    return in_array(strtolower((string)$st->fetchColumn()), STROKE_ADMINS, true);
+}
+
+/** {glyph:"C", strokes:[[[x,y],...],...]} — מערך ריק מוחק את האות. נקודות מנורמלות 0..1 */
+function t_save_strokes(int $tid, array $b): array {
+    if (!t_is_stroke_admin($tid)) json_err('רק מנהלת התוכן יכולה לשמור מסלולי כתיבה', 403);
+    $glyph = (string)($b['glyph'] ?? '');
+    if (!preg_match('/^[A-Za-z]$/', $glyph)) json_err('אות אנגלית אחת (A–Z / a–z)');
+    $clean = [];
+    foreach ((array)($b['strokes'] ?? []) as $s) {
+        $pts = [];
+        foreach ((array)$s as $p) {
+            if (!is_array($p) || count($p) < 2) continue;
+            $pts[] = [round(max(0, min(1, (float)$p[0])), 3), round(max(0, min(1, (float)$p[1])), 3)];
+        }
+        if (count($pts) > 1) $clean[] = array_slice($pts, 0, 400);
+    }
+    $all = (array)t_strokes()['strokes'];
+    if ($clean) $all[$glyph] = array_slice($clean, 0, 8); else unset($all[$glyph]);
+    ksort($all);
+    $f = strokes_file();
+    file_put_contents($f . '.tmp', json_encode($all, JSON_UNESCAPED_UNICODE));
+    rename($f . '.tmp', $f);
+    return ['ok' => true, 'glyph' => $glyph, 'strokes' => count($clean), 'total' => count($all)];
+}
+
+function t_me(int $tid): array {
+    return ['strokeAdmin' => t_is_stroke_admin($tid)];
+}
+
 function class_row(array $r): array {
     return [
         'id' => (int)$r['id'],

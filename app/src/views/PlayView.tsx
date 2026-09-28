@@ -7,7 +7,7 @@ import { STAR_KINDS, starsFor, unitQuality, weakSlides } from '../data/stars';
 import { BOOKLET_PDF, BOOKLET_PAGE, TEXTS_PDF, TEXTS_PAGE, FINALE, pdfPage } from '../data/resources';
 import StarRow from '../ui/StarRow';
 import StarLoader from '../ui/StarLoader';
-import { loadUnit, loadCatalog, SCORED_KINDS, type UnitMeta } from '../data/units';
+import { loadUnit, loadCatalog, playOrder, SCORED_KINDS, type UnitMeta } from '../data/units';
 import { loadThemes } from '../engine/theme';
 import type { Instructions, UnitContent } from '../engine/types';
 import { StageFrame } from '../engine/Stage';
@@ -18,6 +18,7 @@ import FindAnswer from '../games/FindAnswer';
 import DragDrop from '../games/DragDrop';
 import { CardQuiz, Matching, Memory, Flashcards } from '../games/Cards';
 import { Cover, VideoSlide } from '../games/Design';
+import Trace from '../games/Trace';
 import SkyStars, { DrawnStar } from '../ui/Sky';
 import { IconHome, IconChevronLeft, IconChevronRight, IconVolume, IconPlay, IconRotate, IconMaximize, IconCheck, IconRefresh, IconStar, IconPrint } from '../ui/icons';
 
@@ -56,8 +57,12 @@ export default function PlayView({ unitId, jump, session, progress, onReported }
     return () => stopVoice();
   }, [unitId]);
 
+  // מיקום שמור = מיקום בסדר ההצגה; jump = אינדקס שקף (מהמסך "לשפר" / הבקבוק)
   const saved = progress.positions[unitId] && !progress.positions[unitId].completed ? progress.positions[unitId].slide : 0;
-  const resumeAt = jump ?? saved;
+  const order = unit ? playOrder(unit) : [];
+  const resumeAt = unit
+    ? Math.min(order.length - 1, Math.max(0, jump !== undefined ? Math.max(0, order.indexOf(jump)) : saved))
+    : 0;
 
   if (err) return <Centered><p>{err}</p><button className="btn star" onClick={() => nav('/map')}>למפה</button></Centered>;
   if (!unit) return <Centered><StarLoader /></Centered>;
@@ -100,8 +105,8 @@ export default function PlayView({ unitId, jump, session, progress, onReported }
   );
 }
 
-function collectAudio(unit: UnitContent, from: number): string[] {
-  const s = JSON.stringify(unit.slides.slice(from, from + 4));
+function collectAudio(unit: UnitContent, fromPos: number): string[] {
+  const s = JSON.stringify(playOrder(unit).slice(fromPos, fromPos + 4).map((i) => unit.slides[i]));
   return [...new Set([...s.matchAll(/"id":"([0-9a-f-]{36})","lib":"User"\}/g)].map((m) => m[1]))];
 }
 
@@ -112,13 +117,18 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
   qMap: Record<number, number>; onQuality: (slide: number, q: number) => void;
   onExit: () => void; onComplete: () => void;
 }) {
-  const [idx, setIdx] = useState(startIdx);
+  // pos = מיקום בסדר ההצגה; idx = אינדקס השקף במערך (מפתח התוצאות השמורות)
+  const order = useMemo(() => playOrder(unit), [unit]);
+  const [pos, setPos] = useState(startIdx);
+  const idx = order[pos];
   const [active, setActive] = useState(false);
   const [assist, setAssist] = useState<Assist | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const total = unit.slides.length;
   const slide = unit.slides[idx];
   const kinds = useMemo(() => unit.slides.map((s) => s.kind), [unit]);
+  const shownKinds = useMemo(() => order.map((i) => kinds[i]), [order, kinds]);
+  const shownQ = useMemo(() => Object.fromEntries(order.map((i, p) => [p, qMap[i] ?? 0])), [order, qMap]);
   const stats = useRef({ correct: 0, wrong: 0, skills: {} as Record<string, SkillStat>, t0: Date.now(), finished: false, touched: false, quality: 0 });
   const finishing = useRef(false);
 
@@ -131,8 +141,8 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
     stats.current = { correct: 0, wrong: 0, skills: {}, t0: Date.now(), finished: false, touched: false, quality: 0 };
     finishing.current = false;
     setActive(false);
-    preloadAudio(collectAudio(unit, idx + 1));
-    reportPosition(session, unit.id, idx, total).catch(() => {});
+    preloadAudio(collectAudio(unit, pos + 1));
+    reportPosition(session, unit.id, pos, total).catch(() => {});
     // בלי "1, 2, 3 Go!" של Jigzi — שקף בלי הוראות מתחיל מיד
     if (hasContent(instructions)) {
       openAssist({ a: instructions, type: 'instructions', always: false });
@@ -140,7 +150,7 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
       setActive(true);
     }
     return () => stopVoice();
-  }, [idx]);
+  }, [pos]);
 
   const assistRef = useRef<Assist | null>(null);
   const openAssist = (as: Assist) => {
@@ -161,7 +171,7 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
     else goNext(true);
   };
 
-  const sendResult = (finished: boolean, nextIdx: number) => {
+  const sendResult = (finished: boolean, nextPos: number) => {
     const s = stats.current;
     const starKind = STAR_KINDS.has(slide.kind);
     if (!(SCORED_KINDS.has(slide.kind) || starKind) || (!s.touched && !finished && s.quality <= 0)) return;
@@ -173,7 +183,7 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
     reportResult(session, {
       unitId: unit.id, slide: idx, kind: slide.kind,
       correct: s.correct, wrong: s.wrong, seconds: Math.round((Date.now() - s.t0) / 1000),
-      skills: s.skills, next: nextIdx, total, quality: Math.round(s.quality * 100) / 100, stars,
+      skills: s.skills, next: nextPos, total, quality: Math.round(s.quality * 100) / 100, stars,
     }).catch(() => {});
   };
 
@@ -181,22 +191,22 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
     assistRef.current = null;
     stopVoice();
     setAssist(null); // מעבר לא נתקע בגלל חלון הוראות פתוח
-    sendResult(finished || stats.current.finished, idx + 1);
-    if (idx + 1 >= total) {
+    sendResult(finished || stats.current.finished, pos + 1);
+    if (pos + 1 >= total) {
       reportPosition(session, unit.id, total, total).catch(() => {});
       onComplete();
     } else {
-      setIdx(idx + 1);
+      setPos(pos + 1);
     }
   };
 
   const goPrev = () => {
-    if (idx === 0) return;
+    if (pos === 0) return;
     assistRef.current = null;
     stopVoice();
     setAssist(null);
-    sendResult(false, idx - 1);
-    setIdx(idx - 1);
+    sendResult(false, pos - 1);
+    setPos(pos - 1);
   };
 
   const api: PlayApi = {
@@ -234,26 +244,26 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
   return (
     <div className="player">
       <header className="player-bar">
-        <button className="icon-btn" onClick={() => { stopVoice(); sendResult(false, idx); onExit(); }} aria-label="למפה" title="למפה"><IconHome size={20} /></button>
+        <button className="icon-btn" onClick={() => { stopVoice(); sendResult(false, pos); onExit(); }} aria-label="למפה" title="למפה"><IconHome size={20} /></button>
         <button
-          className="icon-btn subtle" aria-label="מההתחלה" title="מההתחלה" disabled={idx === 0}
-          onClick={() => { assistRef.current = null; stopVoice(); setAssist(null); sendResult(false, 0); setIdx(0); }}
+          className="icon-btn subtle" aria-label="מההתחלה" title="מההתחלה" disabled={pos === 0}
+          onClick={() => { assistRef.current = null; stopVoice(); setAssist(null); sendResult(false, 0); setPos(0); }}
         >
           <IconRotate size={18} />
         </button>
-        <div className="player-progress" title={`שקף ${idx + 1} מתוך ${total}`}>
-          <div style={{ width: `${((idx + 1) / total) * 100}%` }} />
+        <div className="player-progress" title={`שקף ${pos + 1} מתוך ${total}`}>
+          <div style={{ width: `${((pos + 1) / total) * 100}%` }} />
         </div>
         <SlideCounter
-          idx={idx} total={total} kinds={kinds} qMap={qMap}
+          idx={pos} total={total} kinds={shownKinds} qMap={shownQ}
           easy={session.token === 'teacher-preview'}
           onJump={(to) => {
-            if (to === idx) return;
+            if (to === pos) return;
             assistRef.current = null;
             stopVoice();
             setAssist(null);
             sendResult(false, to);
-            setIdx(to);
+            setPos(to);
           }}
         />
         {hasContent(instructions) && (
@@ -292,7 +302,7 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
           </div>
         )}
 
-        <button className="nav-arrow prev" onClick={goPrev} disabled={idx === 0} aria-label="הקודם"><IconChevronLeft size={30} /></button>
+        <button className="nav-arrow prev" onClick={goPrev} disabled={pos === 0} aria-label="הקודם"><IconChevronLeft size={30} /></button>
         <button className="nav-arrow next" onClick={() => goNext(false)} aria-label="הבא"><IconChevronRight size={30} /></button>
       </div>
     </div>
@@ -302,7 +312,7 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
 const KIND_NAME: Record<string, string> = {
   cover: 'שער', poster: 'פוסטר', video: 'סרטון', embed: 'סרטון', tappingBoard: 'הקשה ושמיעה',
   findAnswer: 'מצא את התשובה', dragDrop: 'גרירה', cardQuiz: 'חידון קלפים', matching: 'התאמה',
-  memoryGame: 'זיכרון', flashcards: 'כרטיסיות',
+  memoryGame: 'זיכרון', flashcards: 'כרטיסיות', trace: 'כתיבה',
 };
 
 /** מונה השקפים — לחיצה ארוכה פותחת תפריט מעבר לשקף (לא זמין בלחיצה סתמית) */
@@ -369,6 +379,7 @@ export function SlideBody({ kind, c }: { kind: string; c: any }) {
     case 'matching': return <Matching c={c} />;
     case 'memoryGame': return <Memory c={c} />;
     case 'flashcards': return <Flashcards c={c} />;
+    case 'trace': return <Trace c={c} />;
     case 'cover': return <Cover c={c} kind="cover" />;
     case 'poster': return <Cover c={c} kind="poster" />;
     case 'video':
@@ -383,7 +394,8 @@ function UnitDone({ unit, nextUnit, qMap }: { unit: UnitContent; nextUnit?: Unit
   const kinds = unit.slides.map((s) => s.kind);
   const view = Object.fromEntries(Object.entries(qMap).map(([i, q]) => [`${unit.id}:${i}`, { c: 0, w: 0, n: 1, q }]));
   const stars = starsFor(unitQuality(unit.id, kinds, view));
-  const weak = weakSlides(unit.id, kinds, view);
+  const order = playOrder(unit);
+  const weak = weakSlides(unit.id, kinds, view).sort((a, b) => order.indexOf(a) - order.indexOf(b));
   useEffect(() => {
     playWin();
     if (stars >= 4) confetti({ particleCount: stars === 5 ? 180 : 100, spread: 80, origin: { y: 0.6 }, colors: ['#f5b82e', '#ffe08a', '#8ea2ff', '#ffffff'] });
@@ -407,7 +419,7 @@ function UnitDone({ unit, nextUnit, qMap }: { unit: UnitContent; nextUnit?: Unit
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
             {weak.length > 0 && stars < 5 && (
               <button className={`btn ${stars >= 4 ? 'secondary' : 'star'}`} style={{ minWidth: 240 }} onClick={() => nav(`/unit/${unit.id}/${weak[0] + 1}`)}>
-                <IconRefresh size={16} /> לשפר — מתחילים בשקף {weak[0] + 1}
+                <IconRefresh size={16} /> לשפר — מתחילים בשקף {order.indexOf(weak[0]) + 1}
               </button>
             )}
             {nextUnit && (

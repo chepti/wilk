@@ -5,6 +5,7 @@ import Join from './views/Join';
 import StarMap from './views/StarMap';
 import Journey from './views/Journey';
 import PathEdit from './views/PathEdit';
+import TraceEdit from './views/TraceEdit';
 import Wardrobe from './views/Wardrobe';
 import Certificate from './views/Certificate';
 import PlayView from './views/PlayView';
@@ -66,6 +67,7 @@ export default function App() {
 
   if (route === 'teacher') return <Teacher />;
   if (route === 'path-edit') return <PathEdit />;
+  if (route === 'trace-edit') return <TraceEdit />;
   if (route === 'parents') return <Parents session={session} progress={progress} />;
   if (route === 'join') {
     return <Join initialCode={parts[1] || ''} onJoined={(s) => { setSession(s); nav('/map'); }} />;

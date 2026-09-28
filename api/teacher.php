@@ -19,5 +19,8 @@ switch ($a) {
     case 'delete_student': json_out(t_delete_student(require_teacher(), $b));
     case 'reset_student':  json_out(t_reset_student(require_teacher(), $b));
     case 'heatmap':        json_out(t_heatmap(require_teacher(), $b));
+    case 'strokes':        json_out(t_strokes());
+    case 'save_strokes':   json_out(t_save_strokes(require_teacher(), $b));
+    case 'me':             json_out(t_me(require_teacher()));
     default:               json_err('פעולה לא מוכרת', 404);
 }

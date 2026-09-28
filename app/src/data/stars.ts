@@ -4,16 +4,20 @@
 import type { SlideStat } from '../lib/api';
 
 /** שקפים שנכנסים לכוכבים (שער/פוסטר לא) */
-export const STAR_KINDS = new Set(['tappingBoard', 'findAnswer', 'dragDrop', 'cardQuiz', 'matching', 'memoryGame', 'flashcards', 'video', 'embed']);
+export const STAR_KINDS = new Set(['tappingBoard', 'findAnswer', 'dragDrop', 'cardQuiz', 'matching', 'memoryGame', 'flashcards', 'video', 'embed', 'trace']);
+
+/** שקף כתיבה נכנס לכוכבים רק אם נוסה — מי שסיים תחנה לפני שנוספו שקפי הכתיבה לא מאבד כוכבים */
+const counts = (k: string, st: SlideStat | undefined) => STAR_KINDS.has(k) && (k !== 'trace' || !!st);
 
 export const Q = { first: 1, retry: 0.6, hinted: 0.3 } as const;
 
 export function unitQuality(unitId: string, kinds: string[], slides: Record<string, SlideStat>): number {
   let sum = 0, n = 0;
   kinds.forEach((k, i) => {
-    if (!STAR_KINDS.has(k)) return;
+    const st = slides[`${unitId}:${i}`];
+    if (!counts(k, st)) return;
     n++;
-    sum += slides[`${unitId}:${i}`]?.q ?? 0;
+    sum += st?.q ?? 0;
   });
   return n ? sum / n : 0;
 }
@@ -54,5 +58,8 @@ export function unitStars(
 
 /** שקפים שעוד אפשר לשפר (לתפריט השקפים ולמסך הסיום) */
 export function weakSlides(unitId: string, kinds: string[], slides: Record<string, SlideStat>): number[] {
-  return kinds.flatMap((k, i) => (STAR_KINDS.has(k) && (slides[`${unitId}:${i}`]?.q ?? 0) < 0.95 ? [i] : []));
+  return kinds.flatMap((k, i) => {
+    const st = slides[`${unitId}:${i}`];
+    return counts(k, st) && (st?.q ?? 0) < 0.95 ? [i] : [];
+  });
 }

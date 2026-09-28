@@ -22,6 +22,7 @@ function op_table(): array {
         'heatmap'        => fn($t, $a) => t_heatmap($t, $a),
         'delete_student' => fn($t, $a) => t_delete_student($t, $a),
         'reset_student'  => fn($t, $a) => t_reset_student($t, $a),
+        'save_strokes'   => fn($t, $a) => t_save_strokes($t, $a),
     ];
 }
 
@@ -48,7 +49,9 @@ case 'help':
             'heatmap'        => ['args' => ['match|classId' => 'class'], 'note' => 'full per-student detail (positions, per-slide first try, skills)'],
             'delete_student' => ['args' => ['match|classId' => 'class', 'student|studentId' => 'nickname (or part)'], 'example' => ['op' => 'delete_student', 'match' => 'ג׳2', 'student' => 'נועה']],
             'reset_student'  => ['args' => ['match|classId' => 'class', 'student|studentId' => 'nickname', 'unitId' => 'optional, e.g. "u3"; omit to reset all']],
+            'save_strokes'   => ['args' => ['glyph' => 'one letter A–Z / a–z', 'strokes' => 'array of strokes; each stroke = [[x,y],...] normalized 0..1 inside the letter box (baseline y=0.66, font Quicksand 600 at 0.6 box). [] deletes'], 'note' => 'content admin only. Read all: GET teacher.php?a=strokes (public)'],
         ],
+        'tracing' => 'Each letter-intro slide is followed by a TRACING slide (upper then lower case). Stroke paths are recorded by the content admin at https://chepti.com/wilk/#/trace-edit and read publicly from teacher.php?a=strokes. A letter without a recorded path is graded by coverage only.',
         'matching' => '"match" finds a class by 6-digit code or part of its name; "student" finds by nickname. Ambiguous → HTTP 409 with "candidates".',
         'skills' => 'Skills are lowercase letters or sound patterns (c, a, ck, qu, ow...). mastery = correct / (correct + wrong) on first tries.',
         'units' => units_catalog(),
