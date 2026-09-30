@@ -7,6 +7,9 @@ error_reporting(E_ALL);
 ini_set('display_errors', '0');
 
 header('Content-Type: application/json; charset=utf-8');
+// LiteSpeed מטמין GET — תשובות ה-API תמיד טריות
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('X-LiteSpeed-Cache-Control: no-cache');
 
 function json_out(array $data, int $status = 200): void {
     http_response_code($status);

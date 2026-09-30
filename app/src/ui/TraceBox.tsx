@@ -1,5 +1,8 @@
 import React, { useEffect, useImperativeHandle, useRef, forwardRef } from 'react';
-import { BOX, BASE_Y, STROKE_COLORS, drawGlyph, drawGuides, fontSpec, type GlyphStrokes } from '../data/strokes';
+import {
+  BOX, BASE_Y, STROKE_COLORS, drawGlyphWithExtras, drawGuides, extraRuns, fontSpec, stemWidth,
+  type GlyphStrokes, type StrokePt,
+} from '../data/strokes';
 import { playVoice, voicePlaying, playPositive } from '../lib/audio';
 import { IconCheck } from './icons';
 
@@ -13,21 +16,36 @@ const TOLERANT_W = 40;
 const COVER_PASS = 0.72;
 const STRAY_MAX = 0.35;
 const START_NEAR = 0.16;
+/** משיכה "נכתבה" אם 60% מהנקודות הייחודיות שלה במרחק PROBE_R מקו הילד */
+const PROBE_R = 0.045;
+/** נקודה ייחודית = רחוקה לפחות DISTINCT_D מכל משיכה אחרת */
+const DISTINCT_D = 0.055;
 
 interface Pt { x: number; y: number }
 interface Mask { glyph: Uint8Array; tolerant: Uint8Array; count: number }
 
-function buildMask(glyph: string): Mask {
+function buildMask(glyph: string, extras: StrokePt[][], strokes: GlyphStrokes | null): Mask {
   const c = document.createElement('canvas');
   c.width = BOX; c.height = BOX;
   const ctx = c.getContext('2d', { willReadFrequently: true })!;
-  drawGlyph(ctx, glyph, '#000');
+  drawGlyphWithExtras(ctx, glyph, extras, '#000', strokes);
   const g = ctx.getImageData(0, 0, BOX, BOX).data;
   ctx.lineWidth = TOLERANT_W;
   ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
   ctx.strokeStyle = '#000';
   ctx.font = fontSpec();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
   ctx.strokeText(glyph, BOX / 2, BOX * BASE_Y);
+  // שוליים גם סביב התוספות
+  ctx.lineWidth = TOLERANT_W + stemWidth();
+  for (const r of extras) {
+    ctx.beginPath();
+    r.forEach(([x, y], i) => (i ? ctx.lineTo(x * BOX, y * BOX) : ctx.moveTo(x * BOX, y * BOX)));
+    if (r.length === 1) ctx.lineTo(r[0][0] * BOX + 0.1, r[0][1] * BOX);
+    ctx.stroke();
+  }
   const t = ctx.getImageData(0, 0, BOX, BOX).data;
   const mg = new Uint8Array(BOX * BOX), mt = new Uint8Array(BOX * BOX);
   let count = 0;
@@ -72,13 +90,16 @@ const TraceBox = forwardRef<TraceBoxHandle, TraceBoxProps>(function TraceBox(
   const soundLoop = useRef(0);
 
   const pts = (strokes ?? []).map((s) => s.map(([x, y]) => ({ x: x * BOX, y: y * BOX })));
+  const extras = useRef<StrokePt[][]>([]);
+  const distinct = useRef<{ pts: Pt[]; r: number }[]>([]);
+  const kidPts = useRef<Pt[]>([]);
 
   const drawTemplate = () => {
     const ctx = tplRef.current?.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, BOX, BOX);
     drawGuides(ctx);
-    drawGlyph(ctx, glyph, done ? '#c9f0d6' : '#dfe6fb');
+    drawGlyphWithExtras(ctx, glyph, extras.current, done ? '#c9f0d6' : '#dfe6fb', strokes);
     if (done) return;
     // נקודות התחלה ממוספרות לכל משיכה
     pts.forEach((st, i) => {
@@ -137,6 +158,7 @@ const TraceBox = forwardRef<TraceBoxHandle, TraceBoxProps>(function TraceBox(
     hitRef.current?.getContext('2d')!.clearRect(0, 0, BOX, BOX);
     firstPt.current = null;
     last.current = null;
+    kidPts.current = [];
     onFill?.(0);
     onHint?.(null);
   };
@@ -144,7 +166,17 @@ const TraceBox = forwardRef<TraceBoxHandle, TraceBoxProps>(function TraceBox(
   useImperativeHandle(ref, () => ({ demo, clear }));
 
   useEffect(() => {
-    mask.current = buildMask(glyph);
+    extras.current = extraRuns(glyph, strokes);
+    // לכל משיכה: הנקודות שלה שרחוקות מכל שאר המשיכות (שם אפשר לדעת אם נכתבה)
+    // משיכה קצרה (הגג של J) — סף "רחוק" ורדיוס בדיקה יחסיים לאורך שלה
+    distinct.current = pts.map((st, si) => {
+      const xs = st.map((q) => q.x), ys = st.map((q) => q.y);
+      const ext = Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+      const D = Math.min(BOX * DISTINCT_D, Math.max(8, ext * 0.6));
+      const pts2 = st.filter((q) => pts.every((o, oi) => oi === si || o.every((r) => (r.x - q.x) ** 2 + (r.y - q.y) ** 2 > D * D)));
+      return { pts: pts2, r: Math.min(BOX * PROBE_R, D * 0.75) };
+    });
+    mask.current = buildMask(glyph, extras.current, strokes);
     firstTry.current = true;
     if (!hitRef.current) {
       hitRef.current = document.createElement('canvas');
@@ -200,6 +232,10 @@ const TraceBox = forwardRef<TraceBoxHandle, TraceBoxProps>(function TraceBox(
     const hit = hitRef.current!.getContext('2d')!;
     hit.lineCap = 'round'; hit.lineJoin = 'round'; hit.lineWidth = HIT_W; hit.strokeStyle = '#000';
     hit.beginPath(); hit.moveTo(from.x, from.y); hit.lineTo(p.x, p.y); hit.stroke();
+    // קו האמצע של הילד, בצפיפות של 5px לפחות
+    const n = Math.max(1, Math.ceil(Math.hypot(p.x - from.x, p.y - from.y) / 5));
+    for (let i = 1; i <= n; i++) kidPts.current.push({ x: from.x + ((p.x - from.x) * i) / n, y: from.y + ((p.y - from.y) * i) / n });
+    if (begin) kidPts.current.push(p);
     last.current = p;
   };
 
@@ -212,15 +248,27 @@ const TraceBox = forwardRef<TraceBoxHandle, TraceBoxProps>(function TraceBox(
       if (m.glyph[i] && hit[i * 4 + 3] > 0) covered++;
       if (ink[i * 4 + 3] > 0) { total++; if (!m.tolerant[i]) out++; }
     }
-    return { coverage: covered / m.count, stray: total ? out / total : 0 };
+    // כל משיכה מוקלטת נכתבה (הנקודה של i, הגג של t, הצ'ופציקים של I): בודקים רק את החלקים
+    // של המשיכה שרחוקים מהמשיכות האחרות, ומודדים מול קו האמצע של מה שהילד כתב (לא מול העובי)
+    const kid = kidPts.current;
+    const missing = distinct.current.filter(({ pts: ds, r }) => {
+      if (!ds.length) return false;
+      const got = ds.filter((q) => kid.some((k) => (k.x - q.x) ** 2 + (k.y - q.y) ** 2 <= r * r)).length;
+      return got / ds.length < 0.6;
+    }).length;
+    return { coverage: covered / m.count, stray: total ? out / total : 0, missing };
   };
 
   const evaluate = () => {
-    const { coverage, stray } = measure();
+    const { coverage, stray, missing } = measure();
     onFill?.(Math.round(coverage * 100));
     const s0 = pts[0]?.[0];
     const fp = firstPt.current;
     const startOk = !s0 || (!!fp && Math.hypot(fp.x - s0.x, fp.y - s0.y) <= BOX * START_NEAR);
+    if (coverage >= COVER_PASS && startOk && missing > 0) {
+      onHint?.(missing === 1 ? 'עוד משיכה אחת — לפי הנקודות הממוספרות' : `עוד ${missing} משיכות — לפי הנקודות הממוספרות`);
+      return;
+    }
     if (coverage >= COVER_PASS && stray <= STRAY_MAX && startOk) {
       onHint?.(null);
       playPositive();

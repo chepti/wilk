@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { nav } from '../App';
 import { loadTeacher, teacherMe, saveStrokes, teacherPreviewSession, loadSession, type StrokeMap } from '../lib/api';
 import {
-  BOX, COURSE_LETTERS, STROKE_COLORS, drawGlyph, drawGuides, loadStrokes, loadTraceFont, setCachedStrokes,
+  BOX, COURSE_LETTERS, STROKE_COLORS, drawGlyph, drawGlyphWithExtras, extraRuns, drawGuides, loadStrokes, loadTraceFont, setCachedStrokes,
   type GlyphStrokes, type StrokePt,
 } from '../data/strokes';
 import { loadCatalog, type UnitMeta } from '../data/units';
@@ -62,6 +62,8 @@ export default function TraceEdit() {
     if (!ctx) return;
     ctx.clearRect(0, 0, BOX, BOX);
     drawGuides(ctx);
+    // האות + מה שהמסלול מוסיף מעבר לגופן (צ'ופציקים וכו') — בגוון מעט כהה יותר כדי שייראה
+    drawGlyphWithExtras(ctx, glyph, extraRuns(glyph, strokes), '#cdd7f7');
     drawGlyph(ctx, glyph, '#dfe6fb');
     const all = [...strokes, cur.current].filter((s) => s.length > 1);
     all.forEach((st, si) => {

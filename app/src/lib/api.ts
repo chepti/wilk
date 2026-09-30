@@ -257,7 +257,7 @@ export async function teacherLogin(email: string, password: string): Promise<Tea
 export type StrokeMap = Record<string, [number, number][][]>;
 
 export async function fetchStrokes(): Promise<StrokeMap> {
-  return (await request<{ strokes: StrokeMap }>('teacher.php?a=strokes')).strokes ?? {};
+  return (await request<{ strokes: StrokeMap }>(`teacher.php?a=strokes&t=${Date.now()}`)).strokes ?? {};
 }
 
 export async function saveStrokes(t: TeacherSession, glyph: string, strokes: [number, number][][]): Promise<void> {
