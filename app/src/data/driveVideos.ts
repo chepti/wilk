@@ -2,6 +2,8 @@
 // לתלמידים שאצלם יוטיוב מסונן. נוצר מהשוואת כותרות; להוספה — מזהה יוטיוב: מזהה קובץ בדרייב.
 export const DRIVE_VIDEOS: Record<string, string> = {
   'TCbU5Ou_K_Q': '1V-TBvM5hI0T84t8_A7Cu-nUkNTbOB1j6',
+  'DPHsK9d4hyo': '1NG-UC6cboyNlZ0ZdvrdT1u9u3Y8Tuyks', // a (תחנה 1) — הועלה 11.10
+  '8p2CQ142AQc': '1fzU0R5vef8I_uvdy8gV7U2p_D1K4sJNY', // S (תחנה 2) — הועלה 11.10
   'stNcVRe3ONI': '1KuByZg13joI9_zxr939G-7eWWVI9sSVj',
   'erT4il6Mrmc': '1yt15UupZOzs68zplUQTbIMqU4jwra09-',
   'd1pVfYJrXSY': '1Ha1ETBm9UUVcRRUy6c7JnHrfNR07WcP7',
