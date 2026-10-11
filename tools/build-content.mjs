@@ -66,6 +66,11 @@ for (const f of jigFiles) {
     const kind = Object.keys(body)[0];
     return { kind, content: strip(body[kind].content) };
   });
+  // שקף פרידה ("מקווים שנהניתם!") שבנוי כהקשה — משחקי, לא משימה: לא נכנס לכוכבים (tappingBoardFree)
+  for (const s of slides) {
+    if (s.kind === 'tappingBoard' && /שנהניתם/.test(JSON.stringify(s.content.base?.stickers ?? []))) s.kind = 'tappingBoardFree';
+  }
+
   // שקף TRACING אחרי כל שקף היכרות עם אות ("הכירו את האות X… כתבו את האות הגדולה והקטנה").
   // נוסף בסוף המערך (תוצאות שמורות לפי אינדקס לא זזות) ו-order קובע שיוצג מיד אחרי ההיכרות.
   const order = slides.map((_, i) => i);

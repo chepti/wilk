@@ -68,6 +68,9 @@ export function youtubeId(url: string): string | null {
   return m ? m[1] : /^[A-Za-z0-9_-]{11}$/.test(u) ? u : null;
 }
 
+/** חלק מהסרטון שצפייה בו נחשבת לצפייה מלאה (כוכבים) */
+const WATCHED = 0.7;
+
 const EMBED_W = 960;
 const EMBED_H = 540;
 
@@ -117,8 +120,9 @@ function DrivePlayer({ id }: { id: string }) {
   playRef.current = play;
   useEffect(() => {
     if (!play.active) return;
+    // הסרטונים 30–60 שניות: 20 שניות על השקף ≈ רוב הסרטון
     const a = setTimeout(() => playRef.current.progress(0.5), 5000);
-    const b = setTimeout(() => playRef.current.progress(1), 25000);
+    const b = setTimeout(() => playRef.current.progress(1), 20000);
     return () => { clearTimeout(a); clearTimeout(b); };
   }, [play.active]);
   return (
@@ -139,6 +143,8 @@ function YoutubePlayer({ yt, onBlocked }: { yt: YoutubeHost; onBlocked: () => vo
   playRef.current = play;
   const blockedRef = useRef(onBlocked);
   blockedRef.current = onBlocked;
+  const watchTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => clearInterval(watchTimer.current), []);
   const id = youtubeId(yt.url);
 
   useEffect(() => {
@@ -158,13 +164,26 @@ function YoutubePlayer({ yt, onBlocked }: { yt: YoutubeHost; onBlocked: () => vo
         },
         events: {
           onReady: (ev: any) => {
+            if (import.meta.env.DEV) (window as any).__wilkYT = ev.target; // לבדיקות בלבד (לא בבנייה לאתר)
             if (yt.muted) ev.target.mute();
             if (yt.autoplay && activeRef.current) ev.target.playVideo();
           },
           // 100/101/150 = הסרטון לא זמין / חסום להטמעה; 2/5 = מזהה / נגן — גם אז עוברים לדרייב
           onError: () => blockedRef.current(),
           onStateChange: (ev: any) => {
-            if (ev.data === 1) playRef.current.progress(0.5); // התחיל לצפות
+            if (ev.data === 1) {
+              playRef.current.progress(0.5); // התחיל לצפות
+              // צפה ברוב הסרטון (70%) = נחשב כמלא, גם אם עבר הלאה לפני הסוף
+              clearInterval(watchTimer.current);
+              watchTimer.current = window.setInterval(() => {
+                try {
+                  const d = ev.target.getDuration(), t = ev.target.getCurrentTime();
+                  if (d > 0 && t / d >= WATCHED) { playRef.current.progress(1); clearInterval(watchTimer.current); }
+                } catch { /* */ }
+              }, 1000);
+            } else {
+              clearInterval(watchTimer.current);
+            }
             if (ev.data !== 0) return; // ended
             playRef.current.progress(1); // צפה עד הסוף
             if (yt.done_action === 'Loop') ev.target.playVideo();

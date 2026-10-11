@@ -331,7 +331,7 @@ function VideoSourceSwitch() {
 }
 
 const KIND_NAME: Record<string, string> = {
-  cover: 'שער', poster: 'פוסטר', video: 'סרטון', embed: 'סרטון', tappingBoard: 'הקשה ושמיעה',
+  cover: 'שער', poster: 'פוסטר', tappingBoardFree: 'סיום', video: 'סרטון', embed: 'סרטון', tappingBoard: 'הקשה ושמיעה',
   findAnswer: 'מצא את התשובה', dragDrop: 'גרירה', cardQuiz: 'חידון קלפים', matching: 'התאמה',
   memoryGame: 'זיכרון', flashcards: 'כרטיסיות', trace: 'כתיבה',
 };
@@ -393,7 +393,8 @@ function SlideCounter({ idx, total, kinds, qMap, easy, onJump }: {
 
 export function SlideBody({ kind, c }: { kind: string; c: any }) {
   switch (kind) {
-    case 'tappingBoard': return <TappingBoard c={c} />;
+    case 'tappingBoard':
+    case 'tappingBoardFree': return <TappingBoard c={c} />;
     case 'findAnswer': return <FindAnswer c={c} />;
     case 'dragDrop': return <DragDrop c={c} />;
     case 'cardQuiz': return <CardQuiz c={c} />;
