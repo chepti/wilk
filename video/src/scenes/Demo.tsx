@@ -1,14 +1,14 @@
 import React from 'react';
 import { AbsoluteFill, staticFile, useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 import { C, display, ui, letters } from '../theme';
-import { lerp, easeInOut, easeIn, pop, soft, clamp, drift } from '../anim';
+import { lerp, easeInOut, easeIn, pop, soft, clamp, drift, useLayout } from '../anim';
 import { NightSky, Shot, Tap, StarBurst, GoldStar } from '../components/motif';
-import { TabletAt, SideHead, TAB } from './Story';
+import { TabletAt, SideHead, useTab, type TabPos } from './Story';
 import meta from '../../public/shots/meta.json';
 import strokes from '../data/strokes.json';
 
 /* קואורדינטות מסך הטאבלט (1280×800) → קואורדינטות הסרטון */
-const toScreen = (x: number, y: number) => ({ x: TAB.x + (x - 640) * TAB.scale, y: TAB.y + (y - 400) * TAB.scale });
+const toScreen = (T: TabPos, x: number, y: number) => ({ x: T.x + (x - 640) * T.scale, y: T.y + (y - 400) * T.scale });
 
 /** תג על אזור לחיץ — כמו באפליקציה: רמקול כחול מהבהב → וי ירוק */
 const Badge: React.FC<{ x: number; y: number; done: boolean; doneAt: number }> = ({ x, y, done, doneAt }) => {
@@ -34,6 +34,9 @@ const Counter: React.FC<{ label: string; done: number; total: number }> = ({ lab
 /* ── 5. מפת המסע ── */
 export const MapScene: React.FC<{ dur: number }> = ({ dur }) => {
   const f = useCurrentFrame();
+  const TAB = useTab();
+  const { pick } = useLayout();
+  const ts = (x: number, y: number) => toScreen(TAB, x, y);
   const top = meta.mapHeight - 800 - 40;
   const y = interpolate(f, [0, dur - 10], [top, 760], { ...clamp, easing: easeInOut });
   // תחנה 8 (הנוכחית) במפה — אוצר שפורץ החוצה
@@ -43,7 +46,7 @@ export const MapScene: React.FC<{ dur: number }> = ({ dur }) => {
       <TabletAt>
         <Shot src="map-full.png" y={y} />
       </TabletAt>
-      {[30, 52, 74].map((at, i) => <StarBurst key={i} x={toScreen(330 + i * 120, 420 - i * 90).x} y={toScreen(330 + i * 120, 420 - i * 90).y} at={at} n={6} dist={110} size={22} />)}
+      {[30, 52, 74].map((at, i) => <StarBurst key={i} x={ts(330 + i * 120, 420 - i * 90).x} y={ts(330 + i * 120, 420 - i * 90).y} at={at} n={6} dist={110} size={22} />)}
       <SideHead text={'מסע הרפתקה\nשל *18* תחנות'} sub={'מתחילים מהאי —\nועולים עד הכוכבים'} out={dur - 12} tag="כל תחנה נפתחת לתיבת אוצר" tagAt={60} />
     </AbsoluteFill>
   );
@@ -52,6 +55,9 @@ export const MapScene: React.FC<{ dur: number }> = ({ dur }) => {
 /* ── 6. שומעים את הצליל: לחיצות על M, ירח, קוף, מפה ── */
 export const TapScene: React.FC<{ dur: number }> = ({ dur }) => {
   const f = useCurrentFrame();
+  const TAB = useTab();
+  const { pick } = useLayout();
+  const ts = (x: number, y: number) => toScreen(TAB, x, y);
   const order = [0, 1, 2, 3, 4]; // M, moon, monkey, map, m
   const taps = order.map((k, i) => ({ k, at: 18 + i * 24 }));
   const heard = taps.filter((t) => f >= t.at + 4).length;
@@ -71,7 +77,7 @@ export const TapScene: React.FC<{ dur: number }> = ({ dur }) => {
       </TabletAt>
       {/* גלי צליל שיוצאים מהטאבלט אחרי כל לחיצה */}
       {taps.map((t, i) => {
-        const c = toScreen(center(t.k).x, center(t.k).y);
+        const c = ts(center(t.k).x, center(t.k).y);
         const p = interpolate(f, [t.at, t.at + 26], [0, 1], clamp);
         if (p <= 0 || p >= 1) return null;
         return [0, 1, 2].map((j) => (
@@ -80,7 +86,7 @@ export const TapScene: React.FC<{ dur: number }> = ({ dur }) => {
           </div>
         ));
       })}
-      {heard >= 5 && <StarBurst x={toScreen(120, 125).x} y={toScreen(120, 125).y} at={taps[4].at + 6} n={8} dist={120} size={24} />}
+      {heard >= 5 && <StarBurst x={ts(120, 125).x} y={ts(120, 125).y} at={taps[4].at + 6} n={8} dist={120} size={24} />}
       <SideHead text={'לוחצים —\nושומעים את *הצליל*'} sub={'סימונים קטנים מראים\nמה עוד לא נשמע'} out={dur - 12} />
     </AbsoluteFill>
   );
@@ -89,6 +95,9 @@ export const TapScene: React.FC<{ dur: number }> = ({ dur }) => {
 /* ── 7. משחקים: גוררים סיר אל המילה pot ── */
 export const GamesScene: React.FC<{ dur: number }> = ({ dur }) => {
   const f = useCurrentFrame();
+  const TAB = useTab();
+  const { pick } = useLayout();
+  const ts = (x: number, y: number) => toScreen(TAB, x, y);
   const { fps } = useVideoConfig();
   const it = meta.drag[3]; // הסיר העליון
   const tx = 548, ty = 245; // מעל המילה pot.
@@ -106,7 +115,7 @@ export const GamesScene: React.FC<{ dur: number }> = ({ dur }) => {
         {f > 6 && f < 54 && <div style={{ position: 'absolute', left: x + it.w / 2 - 22, top: y + it.h / 2 - 22, width: 44, height: 44, borderRadius: 99, background: 'rgba(255,255,255,0.85)', border: `4px solid ${C.accent}`, zIndex: 11 }} />}
         <Counter label="במקום" done={landed ? 1 : 0} total={10} />
       </TabletAt>
-      <StarBurst x={toScreen(tx + 40, ty + 26).x} y={toScreen(tx + 40, ty + 26).y} at={52} n={9} dist={150} size={28} />
+      <StarBurst x={ts(tx + 40, ty + 26).x} y={ts(tx + 40, ty + 26).y} at={52} n={9} dist={150} size={28} />
       <SideHead text={'גוררים, משחקים\nו*קוראים*'} sub={'משפטים ראשונים —\nכבר בתחנה השישית'} out={dur - 10} />
     </AbsoluteFill>
   );
@@ -160,6 +169,9 @@ const DoneMark: React.FC<{ box: number[]; at: number }> = ({ box, at }) => {
 };
 export const TraceScene: React.FC<{ dur: number }> = ({ dur }) => {
   const f = useCurrentFrame();
+  const TAB = useTab();
+  const { pick } = useLayout();
+  const ts = (x: number, y: number) => toScreen(TAB, x, y);
   const { fps } = useVideoConfig();
   const [b0, b1] = meta.traceBoxes;
   const M_END = 78, m_from = 100, m_end = 150;
@@ -176,10 +188,10 @@ export const TraceScene: React.FC<{ dur: number }> = ({ dur }) => {
         <Ink glyph="m" box={b1} from={m_from} to={m_end} />
         <DoneMark box={b1} at={m_end + 4} />
       </TabletAt>
-      <StarBurst x={toScreen(b0[0] + b0[2] / 2, b0[1] + b0[3] / 2).x} y={toScreen(b0[0] + b0[2] / 2, b0[1] + b0[3] / 2).y} at={M_END + 4} n={9} dist={170} size={28} />
+      <StarBurst x={ts(b0[0] + b0[2] / 2, b0[1] + b0[3] / 2).x} y={ts(b0[0] + b0[2] / 2, b0[1] + b0[3] / 2).y} at={M_END + 4} n={9} dist={170} size={28} />
       {/* פריצה: ה-M m המוזהבים עפים מחוץ למסך */}
       {f > 158 && (
-        <div style={{ position: 'absolute', left: interpolate(out, [0, 1], [toScreen(640, 400).x, 1490]), top: interpolate(out, [0, 1], [toScreen(640, 400).y, 840]), transform: `translate(-50%,-50%) scale(${interpolate(out, [0, 1], [0.4, 1])}) rotate(${interpolate(out, [0, 1], [-10, -4])}deg)`, fontFamily: letters, fontWeight: 700, fontSize: 210, color: C.accent, textShadow: '0 0 40px rgba(245,184,46,0.6), 0 14px 30px rgba(0,0,0,0.5)', direction: 'ltr', whiteSpace: 'nowrap' }}>
+        <div style={{ position: 'absolute', left: interpolate(out, [0, 1], [ts(640, 400).x, pick(1490, 540)]), top: interpolate(out, [0, 1], [ts(640, 400).y, pick(840, 1700)]), transform: `translate(-50%,-50%) scale(${interpolate(out, [0, 1], [0.4, 1])}) rotate(${interpolate(out, [0, 1], [-10, -4])}deg)`, fontFamily: letters, fontWeight: 700, fontSize: 210, color: C.accent, textShadow: '0 0 40px rgba(245,184,46,0.6), 0 14px 30px rgba(0,0,0,0.5)', direction: 'ltr', whiteSpace: 'nowrap' }}>
           M m
         </div>
       )}
@@ -191,6 +203,9 @@ export const TraceScene: React.FC<{ dur: number }> = ({ dur }) => {
 /* ── 9. כוכבים ופרסים ── */
 export const RewardsScene: React.FC<{ dur: number }> = ({ dur }) => {
   const f = useCurrentFrame();
+  const TAB = useTab();
+  const { pick } = useLayout();
+  const ts = (x: number, y: number) => toScreen(TAB, x, y);
   const { fps } = useVideoConfig();
   return (
     <AbsoluteFill>
@@ -204,14 +219,14 @@ export const RewardsScene: React.FC<{ dur: number }> = ({ dur }) => {
         const s = pop(f, fps, at, 8, 200, 0.6);
         const a = Math.PI * (0.82 - i * 0.16);
         const x = TAB.x + Math.cos(a) * 420;
-        const y = 300 - Math.sin(a) * 170;
+        const y = TAB.y - 260 - Math.sin(a) * 170;
         return (
           <div key={i} style={{ position: 'absolute', left: x, top: y + (1 - s) * -200, transform: `translate(-50%,-50%) scale(${s}) rotate(${(1 - s) * 90}deg)`, zIndex: 30 }}>
             <GoldStar size={130} rot={drift(f, 6, 0.06, i)} />
           </div>
         );
       })}
-      <StarBurst x={TAB.x} y={170} at={40} n={12} dist={300} size={30} />
+      <StarBurst x={TAB.x} y={TAB.y - 390} at={40} n={12} dist={300} size={30} />
       <SideHead text={'כוכבים, *אוצרות*\nודמות משלך'} sub={'עד 5 כוכבים בתחנה,\nאביזרים לשודד, תעודת קפטן'} out={dur - 10} />
     </AbsoluteFill>
   );
@@ -220,6 +235,9 @@ export const RewardsScene: React.FC<{ dur: number }> = ({ dur }) => {
 /* ── 10. המורה: קוד כיתה ומפת חום שמתמלאת ── */
 export const TeacherScene: React.FC<{ dur: number }> = ({ dur }) => {
   const f = useCurrentFrame();
+  const TAB = useTab();
+  const { pick } = useLayout();
+  const ts = (x: number, y: number) => toScreen(TAB, x, y);
   const { fps } = useVideoConfig();
   const fill = lerp(f, [26, 110], [0, 1], easeInOut);
   const pulse = pop(f, fps, 8, 8, 200, 0.6);
@@ -235,7 +253,7 @@ export const TeacherScene: React.FC<{ dur: number }> = ({ dur }) => {
         <div style={{ position: 'absolute', left: 1052, top: 110, width: 186, height: 72, borderRadius: 18, border: `5px solid ${C.accent}`, transform: `scale(${0.9 + 0.1 * pulse})`, opacity: lerp(f, [8, 14], [0, 1]) * lerp(f, [70, 84], [1, 0]), zIndex: 11 }} />
       </TabletAt>
       {/* שם מומצא יוצא מהטבלה */}
-      <div style={{ position: 'absolute', left: toScreen(1180, 300).x + 30, top: toScreen(1180, 300).y - 30, transform: `scale(${pop(f, fps, 120) * lerp(f, [dur - 14, dur - 4], [1, 0])})`, transformOrigin: '0% 50%', zIndex: 40 }}>
+      <div style={{ position: 'absolute', left: pick(ts(1180, 300).x + 30, 330), top: pick(ts(1180, 300).y - 30, 1590), transform: `scale(${pop(f, fps, 120) * lerp(f, [dur - 14, dur - 4], [1, 0])})`, transformOrigin: '0% 50%', zIndex: 40 }}>
         <div style={{ background: '#fff', borderRadius: 24, padding: '16px 26px', boxShadow: '0 20px 40px -12px rgba(20,30,80,0.35)', direction: 'rtl', fontFamily: display, color: C.text, minWidth: 330 }}>
           <div style={{ fontWeight: 800, fontSize: 32 }}>נועה · 7 תחנות</div>
           <div style={{ fontFamily: ui, fontSize: 22, color: C.muted, marginTop: 4 }}>מכירה: c · a · t · s · h · r · f · m</div>
@@ -250,6 +268,9 @@ export const TeacherScene: React.FC<{ dur: number }> = ({ dur }) => {
 /* ── 11. הורים ועזרים + רשת מסוננת ── */
 export const ParentsScene: React.FC<{ dur: number }> = ({ dur }) => {
   const f = useCurrentFrame();
+  const TAB = useTab();
+  const { pick } = useLayout();
+  const ts = (x: number, y: number) => toScreen(TAB, x, y);
   const { fps } = useVideoConfig();
   const y = interpolate(f, [10, 70], [0, 790], { ...clamp, easing: easeInOut });
   const chip = soft(f, fps, 86);
@@ -263,7 +284,7 @@ export const ParentsScene: React.FC<{ dur: number }> = ({ dur }) => {
       </TabletAt>
       {/* מתג יוטיוב ⇄ דרייב פורץ מהמסך */}
       {f > 84 && (
-        <div style={{ position: 'absolute', left: interpolate(chip, [0, 1], [TAB.x, 1500]), top: interpolate(chip, [0, 1], [TAB.y, 800]), transform: `translate(-50%,-50%) scale(${interpolate(chip, [0, 1], [0.3, 1])})`, zIndex: 40 }}>
+        <div style={{ position: 'absolute', left: interpolate(chip, [0, 1], [TAB.x, pick(1500, 540)]), top: interpolate(chip, [0, 1], [TAB.y, pick(800, 1700)]), transform: `translate(-50%,-50%) scale(${interpolate(chip, [0, 1], [0.3, 1])})`, zIndex: 40 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: C.ink, color: '#fff', borderRadius: 999, padding: '16px 30px', fontFamily: display, fontWeight: 800, fontSize: 34, direction: 'rtl', boxShadow: '0 24px 44px -14px rgba(10,20,60,0.5)' }}>
             <svg width={34} height={34} viewBox="0 0 24 24" fill="none" stroke={C.accent2} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11" /><rect x="2" y="6" width="14" height="12" rx="2" /></svg>
             <span style={{ opacity: toggled ? 0.45 : 1 }}>יוטיוב</span>

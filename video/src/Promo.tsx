@@ -28,10 +28,10 @@ const SCENES: SceneDef[] = [
   { Comp: TapScene, from: S.tap, to: S.games },
   { Comp: GamesScene, from: S.games, to: S.trace },
   { Comp: TraceScene, from: S.trace, to: S.rewards },
-  { Comp: RewardsScene, from: S.rewards, to: S.teacher, reveal: { kind: 'circle', x: [395, 540], y: [430, 960], pre: 12, post: 4, edge: C.accent } },
+  { Comp: RewardsScene, from: S.rewards, to: S.teacher, reveal: { kind: 'circle', x: [395, 540], y: [430, 1180], pre: 12, post: 4, edge: C.accent } },
   { Comp: TeacherScene, from: S.teacher, to: S.parents },
   { Comp: ParentsScene, from: S.parents, to: S.outro },
-  { Comp: Outro, from: S.outro, to: TOTAL, reveal: { kind: 'circle', x: [1240, 540], y: [820, 960], pre: 14, post: 4, edge: C.accent } },
+  { Comp: Outro, from: S.outro, to: TOTAL, reveal: { kind: 'circle', x: [1500, 540], y: [800, 1700], pre: 14, post: 4, edge: C.accent } },
 ];
 
 // פסי מעבר (בכיוון RTL) על עליות האנרגיה
