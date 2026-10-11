@@ -23,6 +23,8 @@ export interface Resource {
   desc: string;
   icon: ResourceIcon;
   links: { label: string; href: string }[];
+  /** קישור משני קטן — למשל אותו סרטון מדרייב למי שיוטיוב חסום אצלו */
+  fallback?: { label: string; href: string };
   audience: ('teacher' | 'parent')[];
   featured?: boolean;
   /** תמונות תצוגה מקדימה ב-public/previews (tools/make-previews.mjs) */
@@ -45,7 +47,8 @@ export const RESOURCES: Resource[] = [
     id: 'explainer', icon: 'video', previews: ['explainer'], previewKind: 'page', audience: ['teacher'],
     title: 'סרטון הסבר על המרחב',
     desc: 'סיור קצר במרחב רכישת הקריאה בשיטה של פנינה וילק — מה יש בו ואיך עובדים איתו בכיתה.',
-    links: [{ label: 'צפייה בסרטון', href: 'https://drive.google.com/file/d/1iPnDJrFQqxZqvOhu3nqHx6n0OCutzCJ8/view' }],
+    links: [{ label: 'צפייה ביוטיוב', href: 'https://www.youtube.com/watch?v=yWHue5lcPhs' }],
+    fallback: { label: 'יוטיוב חסום? צפייה מגוגל דרייב', href: 'https://drive.google.com/file/d/1iPnDJrFQqxZqvOhu3nqHx6n0OCutzCJ8/view' },
   },
   {
     id: 'texts', icon: 'text', previews: ['texts-1'], previewKind: 'page', audience: ['teacher', 'parent'],

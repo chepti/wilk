@@ -49,6 +49,9 @@ export default function ResourcesPanel({ audience }: { audience: 'teacher' | 'pa
                   </a>
                 ))}
               </div>
+              {r.fallback && (
+                <a className="res-fallback" href={r.fallback.href} target="_blank" rel="noopener noreferrer">{r.fallback.label}</a>
+              )}
               </div>
             </article>
           );
