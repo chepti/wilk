@@ -19,7 +19,7 @@ import DragDrop from '../games/DragDrop';
 import { CardQuiz, Matching, Memory, Flashcards } from '../games/Cards';
 import { Cover, VideoSlide } from '../games/Design';
 import Trace from '../games/Trace';
-import { DRIVE_VIDEOS } from '../data/driveVideos';
+import { DRIVE_VIDEOS, VIDEO_TITLES } from '../data/driveVideos';
 import { videoSource, chooseVideoSource, onVideoSource } from '../lib/videoSource';
 import SkyStars, { DrawnStar } from '../ui/Sky';
 import { IconHome, IconChevronLeft, IconChevronRight, IconVolume, IconPlay, IconRotate, IconMaximize, IconCheck, IconRefresh, IconStar, IconPrint, IconVideo } from '../ui/icons';
@@ -137,16 +137,43 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
   useEffect(() => onVoiceState(setSpeaking), []);
 
   const { instructions, feedback } = useMemo(() => slideAssist(slide.kind, slide.content), [slide]);
+  const isVideo = (k?: string) => k === 'video' || k === 'embed';
   const hasDriveCopy = useMemo(() => {
-    if (slide.kind !== 'video' && slide.kind !== 'embed') return false;
+    if (!isVideo(slide.kind)) return false;
     const j = JSON.stringify(slide.content);
     return Object.keys(DRIVE_VIDEOS).some((k) => j.includes(k));
   }, [slide]);
+  // סרטון שני ברצף — כותרת, כדי שלא ייראה כמו חזרה על הקודם
+  const videoTitle = useMemo(() => {
+    if (!isVideo(slide.kind) || !isVideo(shownKinds[pos - 1])) return null;
+    const j = JSON.stringify(slide.content);
+    const id = Object.keys(VIDEO_TITLES).find((k) => j.includes(k));
+    return id ? VIDEO_TITLES[id] : null;
+  }, [slide, pos, shownKinds]);
+
+  // תזכורת כשמדלגים על משימה לא גמורה: המשחק מדווח מה חסר, ההקלקה הראשונה על "הבא" מזכירה, השנייה עוברת
+  const pendingRef = useRef<string | null>(null);
+  const nudgedRef = useRef(false);
+  const [nudge, setNudge] = useState<string | null>(null);
+  // איפוס בזמן הרינדור (לא באפקט): אפקטים של המשחק רצים לפני אפקטים של הנגן, והיו נמחקים
+  const pendingPos = useRef(pos);
+  if (pendingPos.current !== pos) { pendingPos.current = pos; pendingRef.current = null; nudgedRef.current = false; }
+  const tryNext = () => {
+    const doneBefore = (qMap[idx] ?? 0) >= 0.95; // כבר עשו את השקף הזה במלואו בעבר
+    if (pendingRef.current && !nudgedRef.current && !finishing.current && !doneBefore) {
+      nudgedRef.current = true;
+      setNudge(pendingRef.current);
+      return;
+    }
+    setNudge(null);
+    goNext(false);
+  };
 
   // תחילת שקף: הוראות (חלון אם יש טקסט / חובה, אחרת שמע בלבד) ← משחק
   useEffect(() => {
     stats.current = { correct: 0, wrong: 0, skills: {}, t0: Date.now(), finished: false, touched: false, quality: 0 };
     finishing.current = false;
+    setNudge(null);
     setActive(false);
     preloadAudio(collectAudio(unit, pos + 1));
     reportPosition(session, unit.id, pos, total).catch(() => {});
@@ -238,6 +265,7 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
     progress: (q) => {
       stats.current.quality = Math.max(stats.current.quality, Math.min(1, Math.max(0, q)));
     },
+    pending: (msg) => { pendingRef.current = msg; },
   };
 
   const fullscreen = () => {
@@ -311,7 +339,23 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
         )}
 
         <button className="nav-arrow prev" onClick={goPrev} disabled={pos === 0} aria-label="הקודם"><IconChevronLeft size={30} /></button>
-        <button className="nav-arrow next" onClick={() => goNext(false)} aria-label="הבא"><IconChevronRight size={30} /></button>
+        {videoTitle && !assist && (
+          <div className="video-next-title pop-in" dir="rtl"><IconVideo size={18} /> סרטון חדש: {videoTitle}</div>
+        )}
+
+        {nudge && (
+          <div className="assist-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setNudge(null); }}>
+            <div className="assist-bubble nudge pop-in" dir="rtl">
+              <p>{nudge}</p>
+              <div className="assist-actions">
+                <button className="btn secondary small" onClick={() => { setNudge(null); goNext(false); }}>להמשיך בכל זאת</button>
+                <button className="btn star small" onClick={() => setNudge(null)}><IconCheck size={16} /> חזרה למשימה</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button className="nav-arrow next" onClick={tryNext} aria-label="הבא"><IconChevronRight size={30} /></button>
       </div>
     </div>
   );
@@ -393,8 +437,8 @@ function SlideCounter({ idx, total, kinds, qMap, easy, onJump }: {
 
 export function SlideBody({ kind, c }: { kind: string; c: any }) {
   switch (kind) {
-    case 'tappingBoard':
-    case 'tappingBoardFree': return <TappingBoard c={c} />;
+    case 'tappingBoard': return <TappingBoard c={c} />;
+    case 'tappingBoardFree': return <TappingBoard c={c} free />;
     case 'findAnswer': return <FindAnswer c={c} />;
     case 'dragDrop': return <DragDrop c={c} />;
     case 'cardQuiz': return <CardQuiz c={c} />;

@@ -13,6 +13,8 @@ export interface PlayApi {
   record: (ok: boolean, text?: string | null) => void;
   /** איכות הביצוע עד עכשיו בשקף (0–1) — לכוכבים. נשלחת כשיוצאים מהשקף */
   progress: (quality: number) => void;
+  /** מה עוד לא נעשה בשקף ("עוד 3 מילים לשמוע") — לתזכורת כשלוחצים "הבא". null = הכול נעשה */
+  pending: (msg: string | null) => void;
 }
 
 export const PlayCtx = createContext<PlayApi | null>(null);

@@ -4,6 +4,7 @@ import { Backgrounds, SpriteView, TextView, TraceLayer, spriteBox, useStage, ang
 import { hitIndex } from '../engine/geometry';
 import { usePlay, wait } from '../engine/play';
 import { Q } from '../data/stars';
+import { StageCounter } from './TappingBoard';
 import { playVoice, stopVoice, playPositive, playDropCorrect, playDropWrong } from '../lib/audio';
 
 // גרירה: פריטים Interactive נגררים לאזורי יעד. נכונות נקבעת רק לפי item_targets.
@@ -34,6 +35,13 @@ export default function DragDrop({ c }: { c: DragDropContent }) {
     return () => clearTimeout(t);
   }, [hint, play.active]);
   useEffect(() => () => stopVoice(), []);
+
+  const needed = required.filter(Boolean).length;
+  const placed = c.items.reduce((n, _, k) => n + (required[k] && done.has(k) ? 1 : 0), 0);
+  useEffect(() => {
+    const left = needed - placed;
+    play.pending(left > 0 ? `עוד ${left === 1 ? 'פריט אחד' : `${left} פריטים`} לגרור למקום.` : null);
+  }, [placed, needed]);
 
   const baseT = (i: number): Transform => {
     const st = c.items[i].sticker;
@@ -132,6 +140,7 @@ export default function DragDrop({ c }: { c: DragDropContent }) {
         return null;
       })}
       <TraceLayer traces={traces} look={() => 'hidden'} cutout={hint && play.active ? traces.map((_, i) => i) : undefined} />
+      {play.active && needed >= 2 && <StageCounter done={placed} total={needed} label="במקום" icon="move" />}
     </div>
   );
 }

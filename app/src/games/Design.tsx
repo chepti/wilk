@@ -119,9 +119,10 @@ function DrivePlayer({ id }: { id: string }) {
   const playRef = useRef(play);
   playRef.current = play;
   useEffect(() => {
+    playRef.current.pending('עוד לא צפיתם בסרטון — כדאי לראות אותו, הוא עוזר לזכור את הצליל.');
     if (!play.active) return;
-    // הסרטונים 30–60 שניות: 20 שניות על השקף ≈ רוב הסרטון
-    const a = setTimeout(() => playRef.current.progress(0.5), 5000);
+    // הסרטונים 20–60 שניות: 20 שניות על השקף ≈ רוב הסרטון
+    const a = setTimeout(() => { playRef.current.progress(0.5); playRef.current.pending(null); }, 5000);
     const b = setTimeout(() => playRef.current.progress(1), 20000);
     return () => { clearTimeout(a); clearTimeout(b); };
   }, [play.active]);
@@ -146,6 +147,8 @@ function YoutubePlayer({ yt, onBlocked }: { yt: YoutubeHost; onBlocked: () => vo
   const watchTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => clearInterval(watchTimer.current), []);
   const id = youtubeId(yt.url);
+
+  useEffect(() => { playRef.current.pending('עוד לא צפיתם בסרטון — כדאי לראות אותו, הוא עוזר לזכור את הצליל.'); }, []);
 
   useEffect(() => {
     if (!id || !host.current) return;
@@ -173,6 +176,7 @@ function YoutubePlayer({ yt, onBlocked }: { yt: YoutubeHost; onBlocked: () => vo
           onStateChange: (ev: any) => {
             if (ev.data === 1) {
               playRef.current.progress(0.5); // התחיל לצפות
+              playRef.current.pending(null);
               // צפה ברוב הסרטון (70%) = נחשב כמלא, גם אם עבר הלאה לפני הסוף
               clearInterval(watchTimer.current);
               watchTimer.current = window.setInterval(() => {

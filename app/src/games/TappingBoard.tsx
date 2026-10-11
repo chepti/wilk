@@ -3,15 +3,26 @@ import type { TappingBoardContent, Trace } from '../engine/types';
 import { Backgrounds, Stickers, TraceLayer, traceCenter } from '../engine/Stage';
 import { usePlay, wait } from '../engine/play';
 import { playVoice, stopVoice } from '../lib/audio';
+import { IconCheck, IconVolume, IconMove } from '../ui/icons';
 
 // הקשה ושמיעה: כל אזור מנגן את ההקלטה שלו (ובועת טקסט אם יש). אין ניקוד.
 
-export default function TappingBoard({ c }: { c: TappingBoardContent }) {
+export default function TappingBoard({ c, free = false }: { c: TappingBoardContent; free?: boolean }) {
   const play = usePlay();
   const [current, setCurrent] = useState<number | null>(null);
   const [bubble, setBubble] = useState<{ i: number; text: string; key: number } | null>(null);
   const [hint, setHint] = useState(c.play_settings.hint === 'Highlight');
   const selected = useRef(new Set<number>());
+  const [heard, setHeard] = useState(0); // לסימונים ולמונה
+  const total = c.traces.length;
+  const guide = !free && total >= 1; // סימונים רק בשקף שהוא משימה (לא בשקף פרידה)
+
+  // מה עוד חסר — לתזכורת כשלוחצים "הבא"
+  useEffect(() => {
+    if (!guide) return;
+    const left = total - heard;
+    play.pending(left > 0 ? `עוד ${left === 1 ? 'מקום אחד' : `${left} מקומות`} ללחוץ ולשמוע — הרמקולים הכחולים מראים איפה.` : null);
+  }, [heard, guide]);
   const token = useRef(0);
   const finished = useRef(false);
   const next = c.play_settings.next;
@@ -40,6 +51,7 @@ export default function TappingBoard({ c }: { c: TappingBoardContent }) {
     const my = ++token.current;
     stopVoice();
     selected.current.add(i); // חשיפה, לא מבחן — לא נרשם כשליטה
+    setHeard(selected.current.size);
     play.progress(selected.current.size / c.traces.length); // כוכבים: צריך ללחוץ על כל הפריטים
     setCurrent(i);
     if (!t.audio && !t.text) return; // נשאר מסומן עד ההקשה הבאה
@@ -62,7 +74,39 @@ export default function TappingBoard({ c }: { c: TappingBoardContent }) {
         cutout={hint && play.active ? c.traces.map((_, i) => i) : undefined}
       />
       {bubble && <TraceBubble key={bubble.key} trace={c.traces[bubble.i]} text={bubble.text} />}
+      {guide && play.active && !hint && (
+        <>
+          {c.traces.map((t, i) => <TapBadge key={i} trace={t} done={selected.current.has(i)} small={total > 8} />)}
+          {total >= 2 && <StageCounter done={heard} total={total} label="נשמעו" />}
+        </>
+      )}
     </>
+  );
+}
+
+/** סימון על אזור לחיץ: רמקול מהבהב = עוד לא נשמע, וי = נשמע. לא תופס לחיצות */
+function TapBadge({ trace, done, small }: { trace: Trace; done: boolean; small: boolean }) {
+  const { x, y, w, h } = traceCenter(trace);
+  const size = small ? 34 : 46;
+  return (
+    <div
+      className={`tap-badge${done ? ' done' : ''}`}
+      style={{ left: x + w / 2 - size * 0.6, top: y - h / 2 - size * 0.4, width: size, height: size }}
+      aria-hidden
+    >
+      {done ? <IconCheck size={size * 0.55} strokeWidth={3} /> : <IconVolume size={size * 0.55} />}
+    </div>
+  );
+}
+
+/** מונה בפינת הבמה: "נשמעו 2 מתוך 5" */
+export function StageCounter({ done, total, label, icon = 'volume' }: { done: number; total: number; label: string; icon?: 'volume' | 'move' }) {
+  const all = done >= total;
+  return (
+    <div className={`stage-counter${all ? ' all' : ''}`} dir="rtl">
+      {all ? <IconCheck size={30} strokeWidth={3} /> : icon === 'move' ? <IconMove size={28} /> : <IconVolume size={28} />}
+      <span>{label} {done} מתוך {total}</span>
+    </div>
   );
 }
 

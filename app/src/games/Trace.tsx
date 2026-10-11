@@ -37,6 +37,10 @@ export default function Trace({ c }: { c: TraceContent }) {
     return () => { alive = false; stopVoice(); };
   }, []);
 
+  useEffect(() => {
+    play.pending(step === 0 ? 'עוד לא כתבתם את האות — מתחילים מהנקודה הירוקה.' : step === 1 ? 'נשארה האות הקטנה לכתוב.' : null);
+  }, [step]);
+
   // פתיחה: שומעים את הצליל פעם אחת
   useEffect(() => {
     if (play.active && ready && c.sound) playVoice(c.sound.id);

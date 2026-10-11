@@ -524,3 +524,12 @@ img.stage-fill { pointer-events: none; }
 .plays-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--ink-soft); margin: 2px 0 4px; }
 .plays-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .plays-legend i, .plays-tip .sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; }
+/* ── סימוני משימה: אזורי הקשה, מונה, תזכורת, כותרת סרטון נוסף ── */
+.tap-badge { position: absolute; z-index: 6; pointer-events: none; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: #3b5bdb; color: #fff; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(20, 30, 80, 0.3); animation: tap-pulse 1.6s ease-in-out infinite; }
+.tap-badge.done { background: #22a95a; animation: none; }
+@keyframes tap-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 91, 219, 0.45), 0 4px 12px rgba(20, 30, 80, 0.3); } 50% { transform: scale(1.12); box-shadow: 0 0 0 14px rgba(59, 91, 219, 0), 0 4px 12px rgba(20, 30, 80, 0.3); } }
+@media (prefers-reduced-motion: reduce) { .tap-badge { animation: none; } }
+.stage-counter { position: absolute; z-index: 6; top: 22px; left: 22px; pointer-events: none; display: inline-flex; align-items: center; gap: 12px; padding: 10px 26px 10px 20px; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #24306b; font: 700 30px 'Varela Round', system-ui, sans-serif; box-shadow: 0 6px 18px rgba(20, 30, 80, 0.18); }
+.stage-counter.all { background: #22a95a; color: #fff; }
+.video-next-title { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 60; display: inline-flex; align-items: center; gap: 8px; max-width: calc(100% - 140px); padding: 8px 18px; border-radius: 999px; background: #fff; color: var(--ink); font-weight: 700; font-size: 15px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.assist-bubble.nudge p { font-size: 20px; }
