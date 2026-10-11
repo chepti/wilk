@@ -1,0 +1,22 @@
+{
+  "name": "promo-video",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render Promo out/promo.mp4 --concurrency=6",
+    "render:vertical": "remotion render PromoVertical out/promo-vertical.mp4 --concurrency=6",
+    "stills": "node scripts/stills.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.530",
+    "@remotion/google-fonts": "^4.0.530",
+    "@remotion/paths": "^4.0.530",
+    "@types/react": "^19.3.0",
+    "lucide-react": "^1.49.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.530",
+    "typescript": "^7.0.2"
+  }
+}
