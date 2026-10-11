@@ -3,6 +3,7 @@
 
 import { BASE } from './mediaPaths';
 import type { PirateLook } from '../data/pirates';
+import { setClassVideoSource, type VideoSource } from './videoSource';
 
 const API = `${BASE}api`;
 
@@ -33,6 +34,8 @@ export interface ProgressData {
   days?: string[];
   /** חוויית המפה שהמורה בחרה לכיתה */
   mapStyle?: MapStyle;
+  /** סרטונים מיוטיוב או מדרייב — ברירת המחדל שהמורה בחרה לכיתה */
+  videoSource?: VideoSource;
 }
 
 export type MapStyle = 'journey' | 'stars';
@@ -148,8 +151,10 @@ function applyPosition(p: ProgressData, unitId: string, slide: number, total: nu
 }
 
 export async function fetchProgress(s: StudentSession): Promise<ProgressData> {
-  if (isLocalSession(s)) return loadGuest(s);
-  return request<ProgressData>('student.php?a=progress', undefined, s.token);
+  if (isLocalSession(s)) { setClassVideoSource(null); return loadGuest(s); }
+  const p = await request<ProgressData>('student.php?a=progress', undefined, s.token);
+  setClassVideoSource(p.videoSource); // ברירת המחדל של הכיתה לנגן הסרטונים
+  return p;
 }
 
 export async function reportResult(s: StudentSession, r: SlideResult): Promise<void> {
@@ -268,7 +273,11 @@ export async function teacherMe(t: TeacherSession): Promise<{ strokeAdmin: boole
   return request('teacher.php?a=me', undefined, t.token);
 }
 
-export interface ClassInfo { id: number; name: string; code: string; freeNav: boolean; showFriends?: boolean; mapStyle?: MapStyle; students: number }
+export interface ClassInfo { id: number; name: string; code: string; freeNav: boolean; showFriends?: boolean; mapStyle?: MapStyle; videoSource?: VideoSource; students: number }
+
+export async function setClassVideoSourceRemote(t: TeacherSession, classId: number, source: VideoSource): Promise<void> {
+  await request('teacher.php?a=set_video_source', { classId, source }, t.token);
+}
 
 export async function setClassMapStyle(t: TeacherSession, classId: number, style: MapStyle): Promise<void> {
   await request('teacher.php?a=set_map_style', { classId, style }, t.token);

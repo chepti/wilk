@@ -1,4 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { DRIVE_VIDEOS, driveEmbed } from '../data/driveVideos';
+import { videoSource, chooseVideoSource, markYoutubeBlocked, onVideoSource } from '../lib/videoSource';
+import { IconVideo } from '../ui/icons';
 import type { CoverContent, PosterContent, VideoContent, EmbedSticker, YoutubeHost } from '../engine/types';
 import { Backgrounds, Stickers, W, H, angle } from '../engine/Stage';
 import { usePlay } from '../engine/play';
@@ -43,15 +46,19 @@ declare global {
 }
 
 let ytReady: Promise<void> | null = null;
+const YT_TIMEOUT = 7000;
+/** נכשל אם הסקריפט חסום (סינון) או לא נטען תוך 7 שניות */
 function loadYT(): Promise<void> {
-  ytReady ??= new Promise((resolve) => {
+  ytReady ??= new Promise<void>((resolve, reject) => {
     if (window.YT?.Player) { resolve(); return; }
     const prev = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => { prev?.(); resolve(); };
     const s = document.createElement('script');
     s.src = 'https://www.youtube.com/iframe_api';
+    s.onerror = () => reject(new Error('blocked'));
     document.head.appendChild(s);
-  });
+    setTimeout(() => reject(new Error('timeout')), YT_TIMEOUT);
+  }).catch((e) => { ytReady = null; throw e; }); // ניסיון חוזר אפשרי בשקף הבא
   return ytReady;
 }
 
@@ -75,10 +82,54 @@ export function YoutubeSticker({ e }: { e: EmbedSticker['Embed'] }) {
     transform: `rotate(${angle(t)}rad)`, background: '#000', borderRadius: 6, overflow: 'hidden',
   };
   if (!yt) return <div style={box} />;
-  return <div style={box}><YoutubePlayer yt={yt} /></div>;
+  return <div style={box}><VideoPlayer yt={yt} /></div>;
 }
 
-function YoutubePlayer({ yt }: { yt: YoutubeHost }) {
+/** יוטיוב או אותו סרטון מדרייב — לפי המתג / הזיהוי האוטומטי / ברירת המחדל של הכיתה */
+function VideoPlayer({ yt }: { yt: YoutubeHost }) {
+  const id = youtubeId(yt.url);
+  const driveId = id ? DRIVE_VIDEOS[id] : undefined;
+  const [src, setSrc] = useState(videoSource());
+  const [failed, setFailed] = useState(false);
+  useEffect(() => onVideoSource(() => { setSrc(videoSource()); setFailed(false); }), []);
+  if (driveId && src === 'drive') return <DrivePlayer id={driveId} />;
+  if (failed) {
+    return (
+      <div className="video-blocked" dir="rtl">
+        <IconVideo size={54} />
+        <p>הסרטון לא נטען — כנראה שיוטיוב חסום ברשת הזו.</p>
+        {driveId && <button className="btn star" onClick={() => chooseVideoSource('drive')}>צפייה מגוגל דרייב</button>}
+      </div>
+    );
+  }
+  return (
+    <YoutubePlayer
+      key={id ?? ''} yt={yt}
+      onBlocked={() => { if (driveId) markYoutubeBlocked(); setFailed(true); }}
+    />
+  );
+}
+
+/** נגן דרייב: אין אירועי צפייה — נחשב "נצפה" לפי זמן על השקף */
+function DrivePlayer({ id }: { id: string }) {
+  const play = usePlay();
+  const playRef = useRef(play);
+  playRef.current = play;
+  useEffect(() => {
+    if (!play.active) return;
+    const a = setTimeout(() => playRef.current.progress(0.5), 5000);
+    const b = setTimeout(() => playRef.current.progress(1), 25000);
+    return () => { clearTimeout(a); clearTimeout(b); };
+  }, [play.active]);
+  return (
+    <iframe
+      src={driveEmbed(id)} title="סרטון" allow="autoplay; fullscreen" allowFullScreen
+      style={{ width: '100%', height: '100%', border: 0, display: 'block', background: '#000' }}
+    />
+  );
+}
+
+function YoutubePlayer({ yt, onBlocked }: { yt: YoutubeHost; onBlocked: () => void }) {
   const play = usePlay();
   const host = useRef<HTMLDivElement>(null);
   const player = useRef<any>(null);
@@ -86,6 +137,8 @@ function YoutubePlayer({ yt }: { yt: YoutubeHost }) {
   activeRef.current = play.active;
   const playRef = useRef(play); // אירועי יוטיוב נרשמים פעם אחת — צריך תמיד את הגרסה העדכנית
   playRef.current = play;
+  const blockedRef = useRef(onBlocked);
+  blockedRef.current = onBlocked;
   const id = youtubeId(yt.url);
 
   useEffect(() => {
@@ -108,6 +161,8 @@ function YoutubePlayer({ yt }: { yt: YoutubeHost }) {
             if (yt.muted) ev.target.mute();
             if (yt.autoplay && activeRef.current) ev.target.playVideo();
           },
+          // 100/101/150 = הסרטון לא זמין / חסום להטמעה; 2/5 = מזהה / נגן — גם אז עוברים לדרייב
+          onError: () => blockedRef.current(),
           onStateChange: (ev: any) => {
             if (ev.data === 1) playRef.current.progress(0.5); // התחיל לצפות
             if (ev.data !== 0) return; // ended
@@ -117,7 +172,7 @@ function YoutubePlayer({ yt }: { yt: YoutubeHost }) {
           },
         },
       });
-    });
+    }).catch(() => { if (alive) blockedRef.current(); });
     return () => { alive = false; try { player.current?.destroy(); } catch { /* */ } player.current = null; };
   }, [id]);
 

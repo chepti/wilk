@@ -123,13 +123,14 @@ case 'position': {
 case 'progress': {
     $sid = require_student();
     touch_student($sid);
-    $fn = db()->prepare('SELECT c.free_nav, c.show_friends, c.map_style, s.look FROM classes c JOIN students s ON s.class_id = c.id WHERE s.id = ?');
+    $fn = db()->prepare('SELECT c.free_nav, c.show_friends, c.map_style, c.video_source, s.look FROM classes c JOIN students s ON s.class_id = c.id WHERE s.id = ?');
     $fn->execute([$sid]);
     $r = $fn->fetch(PDO::FETCH_ASSOC) ?: [];
     json_out(student_progress($sid) + [
         'freeNav' => (bool)($r['free_nav'] ?? 0),
         'showFriends' => (bool)($r['show_friends'] ?? 0),
         'mapStyle' => ($r['map_style'] ?? 'journey') === 'stars' ? 'stars' : 'journey',
+        'videoSource' => ($r['video_source'] ?? 'youtube') === 'drive' ? 'drive' : 'youtube',
         'look' => ($r['look'] ?? '') !== '' ? json_decode($r['look'], true) : null,
     ]);
 }

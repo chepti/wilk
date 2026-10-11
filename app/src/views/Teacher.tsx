@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { nav } from '../App';
 import {
   loadTeacher, saveTeacher, teacherLogin, teacherRegister, fetchClasses, createClass, setClassFree,
-  fetchHeatmap, deleteStudent, teacherPreviewSession, teacherMe, setClassFriends, setClassMapStyle, type TeacherSession, type ClassInfo, type HeatmapStudent,
+  fetchHeatmap, deleteStudent, teacherPreviewSession, teacherMe, setClassFriends, setClassMapStyle, setClassVideoSourceRemote, type TeacherSession, type ClassInfo, type HeatmapStudent,
 } from '../lib/api';
 import { loadCatalog, mastery, SKILL_ORDER, type UnitMeta } from '../data/units';
 import { avatarName } from '../data/avatars';
@@ -176,6 +176,18 @@ function ClassView({ t, cls, onChange }: { t: TeacherSession; cls: ClassInfo; on
               <option value="stars">מפה פשוטה</option>
             </select>
             <span className="tip">חוויית ברירת המחדל של הכיתה. כל תלמיד יכול להחליף אצלו בכפתור במפה</span>
+          </label>
+          <label className="pill tip-host" style={{ cursor: 'pointer' }}>
+            סרטונים:
+            <select
+              value={cls.videoSource ?? 'youtube'}
+              onChange={async (e) => { await setClassVideoSourceRemote(t, cls.id, e.target.value as 'youtube' | 'drive'); onChange(); }}
+              style={{ border: 'none', background: 'transparent', font: 'inherit', color: 'inherit', cursor: 'pointer' }}
+            >
+              <option value="youtube">יוטיוב</option>
+              <option value="drive">גוגל דרייב</option>
+            </select>
+            <span className="tip">בבית ספר שיוטיוב מסונן בו — לבחור דרייב: אותם סרטונים, מנוגנים מגוגל דרייב. גם בלי זה, אם יוטיוב לא נטען אצל תלמיד המעבר לדרייב אוטומטי, ובכל שקף סרטון יש מתג</span>
           </label>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>

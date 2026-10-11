@@ -19,8 +19,10 @@ import DragDrop from '../games/DragDrop';
 import { CardQuiz, Matching, Memory, Flashcards } from '../games/Cards';
 import { Cover, VideoSlide } from '../games/Design';
 import Trace from '../games/Trace';
+import { DRIVE_VIDEOS } from '../data/driveVideos';
+import { videoSource, chooseVideoSource, onVideoSource } from '../lib/videoSource';
 import SkyStars, { DrawnStar } from '../ui/Sky';
-import { IconHome, IconChevronLeft, IconChevronRight, IconVolume, IconPlay, IconRotate, IconMaximize, IconCheck, IconRefresh, IconStar, IconPrint } from '../ui/icons';
+import { IconHome, IconChevronLeft, IconChevronRight, IconVolume, IconPlay, IconRotate, IconMaximize, IconCheck, IconRefresh, IconStar, IconPrint, IconVideo } from '../ui/icons';
 
 type Assist = { a: Instructions; type: 'instructions' | 'feedback'; always: boolean };
 
@@ -135,6 +137,11 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
   useEffect(() => onVoiceState(setSpeaking), []);
 
   const { instructions, feedback } = useMemo(() => slideAssist(slide.kind, slide.content), [slide]);
+  const hasDriveCopy = useMemo(() => {
+    if (slide.kind !== 'video' && slide.kind !== 'embed') return false;
+    const j = JSON.stringify(slide.content);
+    return Object.keys(DRIVE_VIDEOS).some((k) => j.includes(k));
+  }, [slide]);
 
   // תחילת שקף: הוראות (חלון אם יש טקסט / חובה, אחרת שמע בלבד) ← משחק
   useEffect(() => {
@@ -272,6 +279,7 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
             <IconVolume size={20} />
           </button>
         )}
+        {hasDriveCopy && <VideoSourceSwitch />}
         <button className="icon-btn hide-mobile" onClick={fullscreen} aria-label="מסך מלא" title="מסך מלא"><IconMaximize size={19} /></button>
       </header>
 
@@ -306,6 +314,19 @@ function UnitPlayer({ unit, session, startIdx, qMap, onQuality, onExit, onComple
         <button className="nav-arrow next" onClick={() => goNext(false)} aria-label="הבא"><IconChevronRight size={30} /></button>
       </div>
     </div>
+  );
+}
+
+/** מתג מקור הסרטון: יוטיוב ⇄ דרייב (נשמר במכשיר) */
+function VideoSourceSwitch() {
+  const [src, setSrc] = useState(videoSource());
+  useEffect(() => onVideoSource(() => setSrc(videoSource())), []);
+  const other = src === 'drive' ? 'youtube' : 'drive';
+  return (
+    <button className="pill video-src tip-host" onClick={() => chooseVideoSource(other)}>
+      <IconVideo size={16} /> {src === 'drive' ? 'דרייב' : 'יוטיוב'}
+      <span className="tip">{src === 'drive' ? 'הסרטון מגוגל דרייב — לחיצה חוזרת ליוטיוב' : 'יוטיוב חסום אצלכם? לחיצה מעבירה לגוגל דרייב'}</span>
+    </button>
   );
 }
 

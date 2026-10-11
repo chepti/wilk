@@ -487,3 +487,9 @@ img.stage-fill { pointer-events: none; }
 .te-try .trace-box { width: 100%; height: auto; aspect-ratio: 1; border-radius: 26px; opacity: 1; }
 .te-try .trace-done { width: 56px; height: 56px; top: 10px; right: 10px; }
 .te-try .trace-done svg { width: 34px; height: 34px; }
+/* ── מקור סרטון (יוטיוב / דרייב) ── */
+.player-bar .video-src { padding: 6px 12px; font-size: 13.5px; gap: 6px; display: inline-flex; align-items: center; background: rgba(255, 255, 255, 0.12); color: #fff; border-color: rgba(255, 255, 255, 0.35); white-space: nowrap; }
+.player-bar .video-src:hover { background: rgba(255, 255, 255, 0.22); color: #fff; }
+.video-blocked { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: #fff; text-align: center; padding: 24px; background: #1b2350; }
+.video-blocked p { margin: 0; font-size: 30px; font-weight: 700; }
+.video-blocked .btn { font-size: 28px; padding: 14px 34px; }
