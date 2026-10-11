@@ -269,8 +269,30 @@ export async function saveStrokes(t: TeacherSession, glyph: string, strokes: [nu
   await request('teacher.php?a=save_strokes', { glyph, strokes }, t.token);
 }
 
-export async function teacherMe(t: TeacherSession): Promise<{ strokeAdmin: boolean }> {
+export async function teacherMe(t: TeacherSession): Promise<{ strokeAdmin: boolean; admin?: boolean }> {
   return request('teacher.php?a=me', undefined, t.token);
+}
+
+// ── אזור אדמין ──
+
+export interface AdminDay { day: string; plays: number; active: number; results: number; newStudents: number; newTeachers: number }
+export interface AdminTeacher {
+  id: number; name: string; email: string; created_at: string;
+  classes: number; students: number; active30: number; completed: number; last_seen: string | null;
+}
+export interface AdminClass { id: number; teacher_id: number; name: string; created_at: string; students: number; last_seen: string | null }
+export interface AdminUnit { plays: number; plays30: number; started?: number; completed?: number; avgStars?: number | null }
+export interface AdminStats {
+  generatedAt: string;
+  totals: { teachers: number; classes: number; students: number; active7: number; active30: number; plays: number; plays30: number; results: number; completed: number };
+  teachers: AdminTeacher[];
+  classes: AdminClass[];
+  units: Record<string, AdminUnit>;
+  timeline: AdminDay[];
+}
+
+export async function fetchAdminStats(t: TeacherSession): Promise<AdminStats> {
+  return request(`teacher.php?a=admin_stats&t=${Date.now()}`, undefined, t.token);
 }
 
 export interface ClassInfo { id: number; name: string; code: string; freeNav: boolean; showFriends?: boolean; mapStyle?: MapStyle; videoSource?: VideoSource; students: number }

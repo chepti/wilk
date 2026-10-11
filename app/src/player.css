@@ -493,3 +493,27 @@ img.stage-fill { pointer-events: none; }
 .video-blocked { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: #fff; text-align: center; padding: 24px; background: #1b2350; }
 .video-blocked p { margin: 0; font-size: 30px; font-weight: 700; }
 .video-blocked .btn { font-size: 28px; padding: 14px 34px; }
+/* ── אזור אדמין ── */
+.admin > .card, .admin > section { margin-bottom: 16px; }
+.admin h2 { font-size: 18px; margin: 0 0 6px; }
+.stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.stat-tile { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; margin: 0; }
+.stat-label { font-size: 13.5px; color: var(--ink-soft); font-weight: 700; }
+.stat-value { font-size: 34px; line-height: 1.15; color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat-sub { font-size: 12.5px; color: var(--ink-soft); }
+.admin-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.admin-head .seg { display: flex; gap: 6px; }
+.ts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 26px; }
+@media (max-width: 760px) { .ts-grid { grid-template-columns: 1fr; } }
+.ts-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-height: 26px; }
+.ts-head h3 { font-size: 14.5px; margin: 0; color: var(--ink-soft); }
+.ts-head b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.ts-head .muted, .admin .muted { color: var(--ink-soft); }
+.table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-table th { text-align: right; font-size: 12.5px; color: var(--ink-soft); font-weight: 700; padding: 6px 8px; border-bottom: 2px solid #e8ebf3; white-space: nowrap; }
+.admin-table td { padding: 8px; border-bottom: 1px solid #eef0f6; font-variant-numeric: tabular-nums; vertical-align: top; }
+.admin-table tr.clickable { cursor: pointer; }
+.admin-table tr.clickable:hover td { background: #f6f8fd; }
+.admin-table tr.sub-row td { background: #fafbfe; font-size: 13px; color: var(--ink-soft); }
+.admin-table .drill { display: inline-flex; align-items: center; gap: 4px; color: #3b5bdb; font-weight: 700; }

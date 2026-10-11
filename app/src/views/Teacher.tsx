@@ -9,19 +9,9 @@ import { avatarName } from '../data/avatars';
 import { BASE } from '../lib/mediaPaths';
 import { unitStars } from '../data/stars';
 import ResourcesPanel from '../ui/Resources';
-import PlaysChart from '../ui/PlaysChart';
-import { fetchPlays } from '../lib/api';
 import { skillLevel, unitQuality } from '../data/stars';
 import Footer from '../ui/Footer';
-import { IconLogOut, IconPlus, IconCopy, IconEye, IconRefresh, IconTrash, IconUsers, IconGrid, IconArrowRight, IconCheck, IconPen } from '../ui/icons';
-
-/** כניסות לכל תחנה בכל האתר (לא רק בכיתה) */
-function SitePlays() {
-  const [units, setUnits] = useState<UnitMeta[]>([]);
-  const [plays, setPlays] = useState<Record<string, number>>({});
-  useEffect(() => { loadCatalog().then(setUnits); fetchPlays().then(setPlays); }, []);
-  return <PlaysChart units={units} plays={plays} />;
-}
+import { IconLogOut, IconPlus, IconCopy, IconEye, IconRefresh, IconTrash, IconUsers, IconGrid, IconArrowRight, IconCheck } from '../ui/icons';
 
 export default function Teacher() {
   const [t, setT] = useState<TeacherSession | null>(loadTeacher());
@@ -103,7 +93,7 @@ function Dashboard({ t, onOut }: { t: TeacherSession; onOut: () => void }) {
       <header className="teacher-bar">
         <div><b>{t.name}</b> <span style={{ color: 'var(--ink-soft)', fontSize: 14 }}>· English through the Stars</span></div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {strokeAdmin && <button className="pill" onClick={() => nav('/trace-edit')}><IconPen size={15} /> מסלולי כתיבה</button>}
+          {strokeAdmin && <button className="pill" onClick={() => nav('/admin')}><IconGrid size={15} /> אזור אדמין</button>}
           <button className="pill" onClick={() => { teacherPreviewSession(); nav('/map'); }}><IconEye size={15} /> לשחק כמו תלמיד</button>
           <button className="pill" onClick={onOut}><IconLogOut size={15} /> יציאה</button>
         </div>
@@ -125,7 +115,6 @@ function Dashboard({ t, onOut }: { t: TeacherSession; onOut: () => void }) {
           <div className="card" style={{ textAlign: 'center', color: 'var(--ink-soft)' }}>צרו כיתה ראשונה — תקבלו קוד בן 6 ספרות שהתלמידים מקלידים</div>
         )}
         <ResourcesPanel audience="teacher" />
-        <SitePlays />
       </main>
       <Footer />
     </div>

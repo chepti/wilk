@@ -42,6 +42,12 @@ export const RESOURCES: Resource[] = [
     ],
   },
   {
+    id: 'explainer', icon: 'video', previews: ['explainer'], previewKind: 'page', audience: ['teacher'],
+    title: 'סרטון הסבר על המרחב',
+    desc: 'סיור קצר במרחב רכישת הקריאה בשיטה של פנינה וילק — מה יש בו ואיך עובדים איתו בכיתה.',
+    links: [{ label: 'צפייה בסרטון', href: 'https://drive.google.com/file/d/1iPnDJrFQqxZqvOhu3nqHx6n0OCutzCJ8/view' }],
+  },
+  {
     id: 'texts', icon: 'text', previews: ['texts-1'], previewKind: 'page', audience: ['teacher', 'parent'],
     title: 'חוברת טקסטים',
     desc: 'כל הטקסטים שהילדים קוראים לאורך התוכנית, לפי סדר התחנות — לקריאה חוזרת על הדף.',

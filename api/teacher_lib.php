@@ -84,7 +84,81 @@ function t_save_strokes(int $tid, array $b): array {
 }
 
 function t_me(int $tid): array {
-    return ['strokeAdmin' => t_is_stroke_admin($tid)];
+    $admin = t_is_stroke_admin($tid);
+    return ['strokeAdmin' => $admin, 'admin' => $admin];
+}
+
+/**
+ * סטטיסטיקות אדמין (רק למנהלת התוכן): סיכומים, מורים וכיתות, תחנות, ופעילות יומית לאורך זמן.
+ * תאריכים לפי UTC (כמו שנשמרים ב-DB).
+ */
+function t_admin_stats(int $tid): array {
+    if (!t_is_stroke_admin($tid)) json_err('אזור אדמין — למנהלת התוכן בלבד', 403);
+    $db = db();
+    $one = fn(string $sql) => (int)$db->query($sql)->fetchColumn();
+
+    $totals = [
+        'teachers' => $one('SELECT COUNT(*) FROM teachers'),
+        'classes' => $one('SELECT COUNT(*) FROM classes'),
+        'students' => $one('SELECT COUNT(*) FROM students'),
+        'active7' => $one("SELECT COUNT(*) FROM students WHERE last_seen >= datetime('now','-7 days')"),
+        'active30' => $one("SELECT COUNT(*) FROM students WHERE last_seen >= datetime('now','-30 days')"),
+        'plays' => $one('SELECT COALESCE(SUM(n),0) FROM unit_plays'),
+        'plays30' => $one("SELECT COALESCE(SUM(n),0) FROM unit_plays WHERE day >= date('now','-30 days')"),
+        'results' => $one('SELECT COUNT(*) FROM slide_results'),
+        'completed' => $one('SELECT COUNT(*) FROM positions WHERE completed = 1'),
+    ];
+
+    $teachers = $db->query("SELECT t.id, t.name, t.email, t.created_at,
+            (SELECT COUNT(*) FROM classes c WHERE c.teacher_id = t.id) AS classes,
+            (SELECT COUNT(*) FROM students s JOIN classes c ON c.id = s.class_id WHERE c.teacher_id = t.id) AS students,
+            (SELECT COUNT(*) FROM students s JOIN classes c ON c.id = s.class_id WHERE c.teacher_id = t.id AND s.last_seen >= datetime('now','-30 days')) AS active30,
+            (SELECT MAX(s.last_seen) FROM students s JOIN classes c ON c.id = s.class_id WHERE c.teacher_id = t.id) AS last_seen,
+            (SELECT COUNT(*) FROM positions p JOIN students s ON s.id = p.student_id JOIN classes c ON c.id = s.class_id WHERE c.teacher_id = t.id AND p.completed = 1) AS completed
+        FROM teachers t ORDER BY t.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $classes = $db->query("SELECT c.id, c.teacher_id, c.name, c.created_at,
+            (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id) AS students,
+            (SELECT MAX(s.last_seen) FROM students s WHERE s.class_id = c.id) AS last_seen
+        FROM classes c ORDER BY c.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+
+    $units = [];
+    foreach ($db->query("SELECT unit_id, SUM(n) AS plays, SUM(CASE WHEN day >= date('now','-30 days') THEN n ELSE 0 END) AS plays30 FROM unit_plays GROUP BY unit_id") as $r) {
+        $units[$r['unit_id']] = ['plays' => (int)$r['plays'], 'plays30' => (int)$r['plays30']];
+    }
+    foreach ($db->query('SELECT unit_id, COUNT(*) AS started, SUM(completed) AS completed, AVG(CASE WHEN completed = 1 THEN stars END) AS stars FROM positions GROUP BY unit_id') as $r) {
+        $units[$r['unit_id']] = ($units[$r['unit_id']] ?? ['plays' => 0, 'plays30' => 0]) + [
+            'started' => (int)$r['started'], 'completed' => (int)$r['completed'],
+            'avgStars' => $r['stars'] === null ? null : round((float)$r['stars'], 1),
+        ];
+    }
+
+    // פעילות יומית: כניסות (כולל אורחים), תלמידים פעילים (שענו על שקף), תשובות, תלמידים / מורים חדשים
+    $days = [];
+    $put = function (string $sql, string $key) use ($db, &$days) {
+        foreach ($db->query($sql) as $r) {
+            if (!$r['d']) continue;
+            $days[$r['d']] ??= ['plays' => 0, 'active' => 0, 'results' => 0, 'newStudents' => 0, 'newTeachers' => 0];
+            $days[$r['d']][$key] = (int)$r['n'];
+        }
+    };
+    $put('SELECT day AS d, SUM(n) AS n FROM unit_plays GROUP BY day', 'plays');
+    $put('SELECT date(created_at) AS d, COUNT(DISTINCT student_id) AS n FROM slide_results GROUP BY d', 'active');
+    $put('SELECT date(created_at) AS d, COUNT(*) AS n FROM slide_results GROUP BY d', 'results');
+    $put('SELECT date(created_at) AS d, COUNT(*) AS n FROM students GROUP BY d', 'newStudents');
+    $put('SELECT date(created_at) AS d, COUNT(*) AS n FROM teachers GROUP BY d', 'newTeachers');
+    ksort($days);
+    $timeline = [];
+    foreach ($days as $d => $v) $timeline[] = ['day' => $d] + $v;
+
+    $int = fn(array $r, array $keys) => array_merge($r, array_combine($keys, array_map(fn($k) => (int)$r[$k], $keys)));
+    return [
+        'generatedAt' => gmdate('c'),
+        'totals' => $totals,
+        'teachers' => array_map(fn($r) => $int($r, ['id', 'classes', 'students', 'active30', 'completed']), $teachers),
+        'classes' => array_map(fn($r) => $int($r, ['id', 'teacher_id', 'students']), $classes),
+        'units' => (object)$units,
+        'timeline' => $timeline,
+    ];
 }
 
 function class_row(array $r): array {
