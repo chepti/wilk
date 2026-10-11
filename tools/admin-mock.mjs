@@ -52,6 +52,13 @@ for (const [w, h, name] of [[1280, 900, 'admin'], [390, 844, 'admin-mobile']]) {
     await p.click('.seg button:has-text("הכול")');
     await p.waitForTimeout(200);
     console.log('all-range title:', await p.textContent('.admin p.muted'));
+    const chart = await p.$('.plays');
+    await chart.screenshot({ path: path.join(ROOT, 'tools', 'shots', 'plays-stacked.png') });
+    await p.click('.plays-head button:has-text("רק האתר החדש")');
+    await p.waitForTimeout(200);
+    console.log('only-new sub:', await p.textContent('.plays-sub'));
+    await chart.screenshot({ path: path.join(ROOT, 'tools', 'shots', 'plays-new.png') });
+    await p.click('.plays-head button:has-text("הכול")');
   }
   const overflow = await p.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   console.log(name, 'horizontal overflow:', overflow);

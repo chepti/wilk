@@ -517,3 +517,10 @@ img.stage-fill { pointer-events: none; }
 .admin-table tr.clickable:hover td { background: #f6f8fd; }
 .admin-table tr.sub-row td { background: #fafbfe; font-size: 13px; color: var(--ink-soft); }
 .admin-table .drill { display: inline-flex; align-items: center; gap: 4px; color: #3b5bdb; font-weight: 700; }
+/* ── גרף כניסות: שתי סדרות (Jigzi / האתר החדש) ── */
+.plays-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.plays-head h2 { margin: 0; }
+.plays-head .seg { display: flex; gap: 6px; }
+.plays-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--ink-soft); margin: 2px 0 4px; }
+.plays-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.plays-legend i, .plays-tip .sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; }

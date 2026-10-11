@@ -22,11 +22,15 @@ export function unitQuality(unitId: string, kinds: string[], slides: Record<stri
   return n ? sum / n : 0;
 }
 
+/**
+ * ספי הכוכבים — הונמכו ב-11.10.2026 (משוב מורים: "קשה מדי להגיע ל-5"). על 106 תחנות שהושלמו:
+ * הספים הקודמים (95/80/60/35) נתנו 5★ ל-4% בלבד; הנוכחיים — ל-20%, ממוצע 3.2 → 3.6.
+ */
 export function starsFor(q: number): number {
-  if (q >= 0.95) return 5;
-  if (q >= 0.8) return 4;
-  if (q >= 0.6) return 3;
-  if (q >= 0.35) return 2;
+  if (q >= 0.85) return 5;
+  if (q >= 0.7) return 4;
+  if (q >= 0.5) return 3;
+  if (q >= 0.3) return 2;
   return q > 0 ? 1 : 0;
 }
 
