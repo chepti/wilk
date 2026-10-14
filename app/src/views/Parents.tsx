@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { nav } from '../App';
-import { fetchPlays, type ProgressData, type StudentSession } from '../lib/api';
+import { type ProgressData, type StudentSession } from '../lib/api';
 import { loadCatalog, mastery, SKILL_ORDER, type UnitMeta } from '../data/units';
 import { ABOUT, RIGHTS, BOOKLET_PDF, BOOKLET_PAGE, pdfPage } from '../data/resources';
 import { avatarName } from '../data/avatars';
 import { unitStars } from '../data/stars';
 import { skillLevel } from '../data/stars';
-import PlaysChart from '../ui/PlaysChart';
 import StarRow from '../ui/StarRow';
 import ResourcesPanel from '../ui/Resources';
 import Footer from '../ui/Footer';
@@ -16,10 +15,8 @@ import { IconArrowRight, IconBook, IconPrint } from '../ui/icons';
 
 export default function Parents({ session, progress }: { session: StudentSession | null; progress: ProgressData }) {
   const [units, setUnits] = useState<UnitMeta[]>([]);
-  const [plays, setPlays] = useState<Record<string, number>>({});
-  useEffect(() => { loadCatalog().then(setUnits); fetchPlays().then(setPlays); }, []);
+  useEffect(() => { loadCatalog().then(setUnits); }, []);
 
-  const totalPlays = units.reduce((n, u) => n + (u.jigziPlays ?? 0) + (plays[u.id] ?? 0), 0);
   const isChild = session && session.token !== 'teacher-preview';
 
   return (
@@ -45,7 +42,6 @@ export default function Parents({ session, progress }: { session: StudentSession
         </section>
 
         <ResourcesPanel audience="parent" />
-        {totalPlays > 0 && <PlaysChart units={units} plays={plays} />}
         <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 20 }}>{RIGHTS}</p>
       </main>
       <Footer />
